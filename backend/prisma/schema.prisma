@@ -1,0 +1,26 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Mailbox {
+  id  String @id @default(cuid())
+  address String @unique
+  createdAt DateTime @default(now())
+  expiresAt DateTime?
+  messages Message[]
+}
+
+model Message {
+  id String @id @default(cuid())
+  mailbox Mailbox @relation(fields: [mailboxId], references: [id])
+  mailboxId String
+  from String
+  subject String?
+  raw String
+  createdAt DateTime @default(now())
+} 
