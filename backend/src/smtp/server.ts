@@ -2,7 +2,6 @@ import { SMTPServer } from "smtp-server";
 import { simpleParser } from "mailparser";
 import { prisma } from "../lib/prisma";
 import { normalizeAddress, isOurDomain, extractDomain } from "../lib/email";
-import { normalize, parse } from "node:path";
 
 interface SMTPError extends Error {
   responseCode?: number;
