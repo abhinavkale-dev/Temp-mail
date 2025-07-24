@@ -1,8 +1,8 @@
 import express, { Request, Response, Express } from 'express';
 import cors from 'cors';
 import { prisma } from '../lib/prisma.js';
-import { makeRandomAddress, normalizeAddress, isOurDomain } from '../lib/email.js';
-import rateLimit from './middleware/rateLimit.js';
+import { makeRandomAddress, normalizeAddress, isOurDomain } from '../lib/email';
+import rateLimit from './middleware/rateLimit';
 
 export function createApiServer(): Express {
   const app = express();
