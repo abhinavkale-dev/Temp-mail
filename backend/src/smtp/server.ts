@@ -46,12 +46,22 @@ export function startSmtp(): void {
           subject: parsed.subject,
         });
 
+      const reconstructedEmail = `From: ${parsed.from?.text || 'unknown'}
+To: ${rcptAddr}
+Subject: ${parsed.subject || '(No Subject)'}
+Date: ${parsed.date?.toUTCString() || new Date().toUTCString()}
+Content-Type: text/html; charset=utf-8
+
+${parsed.html || parsed.text || ''}`;
+
+        const rawBuffer = Buffer.from(reconstructedEmail, 'utf-8');
+
         await prisma.message.create({
           data: {
             mailbox: {connect: {address: rcptAddr}},
             from: parsed.from?.text || 'unknown',
-            subject: parsed.subject,
-            raw: parsed.text || parsed.html || '',
+            subject: parsed.subject || '(No Subject)',
+            raw: rawBuffer,
           }
         });
 

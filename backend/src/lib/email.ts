@@ -1,9 +1,20 @@
-import { nanoid } from "nanoid";
-
 const ALLOWED_DOMAIN = process.env.SMTP_DOMAIN || process.env.MAIL_DOMAIN || 'temp.abhi.at';
 
-export function makeRandomAddress() {
-  return `${nanoid(8).toLocaleLowerCase()}@${ALLOWED_DOMAIN}`;
+export function makeCustomAddress(username: string) {
+  const sanitizedUsername = username
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9.\-_]/g, '');
+  
+  if (!sanitizedUsername) {
+    throw new Error('Invalid username');
+  }
+  
+  if (sanitizedUsername.length < 1 || sanitizedUsername.length > 64) {
+    throw new Error('Username must be between 1 and 64 characters');
+  }
+  
+  return `${sanitizedUsername}@${ALLOWED_DOMAIN}`;
 }
 
 export function normalizeAddress(addr: string) {

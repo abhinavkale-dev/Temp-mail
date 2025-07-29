@@ -10,6 +10,7 @@ datasource db {
 model Mailbox {
   id  String @id @default(cuid())
   address String @unique
+  browserId String?
   createdAt DateTime @default(now())
   expiresAt DateTime?
   messages Message[]
@@ -21,6 +22,6 @@ model Message {
   mailboxId String
   from String
   subject String?
-  raw String
+  raw Bytes @db.ByteA
   createdAt DateTime @default(now())
 } 
