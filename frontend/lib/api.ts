@@ -4,12 +4,15 @@ import type { Message, MessageDetail } from './types';
 
 async function checkBackendHealth(): Promise<boolean> {
   try {
+    console.log('Checking backend health at:', API_BASE + '/health');
     const response = await fetch(`${API_BASE}/health`, { 
       method: 'GET',
-      signal: AbortSignal.timeout(5000)
+      signal: AbortSignal.timeout(10000)
     });
+    console.log('Health check response:', response.status, response.statusText);
     return response.ok;
-  } catch {
+  } catch (error) {
+    console.error('Health check failed:', error);
     return false;
   }
 }
@@ -18,7 +21,7 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
   try {
     const isHealthy = await checkBackendHealth();
     if (!isHealthy) {
-      throw new Error(`Backend server is not running. Please check the connection to ${API_BASE}`);
+      console.warn(`Health check failed for ${API_BASE}, but attempting to proceed...`);
     }
 
     const response = await fetch(`${API_BASE}/mailboxes/custom`, {
@@ -32,7 +35,12 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('API Error:', response.status, errorData);
-      throw new Error(`Failed to create custom mailbox: ${response.status} ${errorData.error || response.statusText}`);
+      
+      if (!isHealthy) {
+        throw new Error(`Backend server is not responding. Health check failed for ${API_BASE} and API call returned ${response.status}: ${errorData.error || response.statusText}`);
+      } else {
+        throw new Error(`Failed to create custom mailbox: ${response.status} ${errorData.error || response.statusText}`);
+      }
     }
     
     const data = await response.json();
