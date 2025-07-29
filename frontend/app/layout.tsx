@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import "./globals.css";
+import { Toaster } from "../components/ui/sonner";
 
 export const metadata: Metadata = {
   title: "Temp Mail",
@@ -12,8 +13,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body>{children}</body>
+    <html lang="en" className="dark">
+      <body>
+        {children}
+        <Toaster />
+      </body>
     </html>
   );
 } 
