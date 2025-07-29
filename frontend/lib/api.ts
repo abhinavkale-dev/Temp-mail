@@ -18,7 +18,7 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
   try {
     const isHealthy = await checkBackendHealth();
     if (!isHealthy) {
-      throw new Error('Backend server is not running. Please start the backend server on http://localhost:3001');
+      throw new Error(`Backend server is not running. Please check the connection to ${API_BASE}`);
     }
 
     const response = await fetch(`${API_BASE}/mailboxes/custom`, {
