@@ -18,10 +18,10 @@ model Mailbox {
 
 model Message {
   id String @id @default(cuid())
-  mailbox Mailbox @relation(fields: [mailboxId], references: [id])
+  mailbox Mailbox @relation(fields: [mailboxId], references: [id], onDelete: Cascade)
   mailboxId String
   from String
   subject String?
-  raw Bytes @db.ByteA
+  raw Bytes
   createdAt DateTime @default(now())
 } 

@@ -16,21 +16,7 @@ export function createApiServer(): Server {
   app.use(cors({origin: process.env.CORS_ORIGIN || true}));
   app.use(rateLimit);
 
-  // Enhanced health check with additional info
-  app.get('/health', (req, res) => {
-    console.log('[HEALTH CHECK]', {
-      timestamp: new Date().toISOString(),
-      userAgent: req.headers['user-agent'],
-      clientIp: req.headers['x-forwarded-for'] || req.socket.remoteAddress
-    });
-    
-    res.json({
-      ok: true,
-      timestamp: new Date().toISOString(),
-      version: '1.0.0',
-      env: process.env.NODE_ENV || 'development'
-    });
-  });
+  app.get('/health', (req, res) => res.json({ok: true}));
 
   app.post('/mailboxes/custom', async(req, res) => {
     try {
