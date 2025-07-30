@@ -13,7 +13,28 @@ export function createApiServer(): Server {
   const app = express();
   
   app.use(express.json());
-  app.use(cors({origin: process.env.CORS_ORIGIN || true}));
+  
+  const corsOptions = {
+    origin: function (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) {
+      if (!origin) return callback(null, true);
+      
+      const allowedOrigins = [
+        'https://temp-mail.abhi.at',
+        'http://localhost:3000',
+        'http://127.0.0.1:3000'
+      ];
+      
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        console.log('CORS blocked origin:', origin);
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
+    credentials: true
+  };
+  
+  app.use(cors(corsOptions));
   app.use(rateLimit);
 
   const router = express.Router();
