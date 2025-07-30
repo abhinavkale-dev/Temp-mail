@@ -16,9 +16,11 @@ export function createApiServer(): Server {
   app.use(cors({origin: process.env.CORS_ORIGIN || true}));
   app.use(rateLimit);
 
-  app.get('/health', (req, res) => res.json({ok: true}));
+  const router = express.Router();
 
-  app.post('/mailboxes/custom', async(req, res) => {
+  router.get('/health', (req, res) => res.json({ok: true}));
+
+  router.post('/mailboxes/custom', async(req, res) => {
     try {
       const { username } = req.body;
       
@@ -66,7 +68,7 @@ export function createApiServer(): Server {
     }
   });
 
-  app.post('/mailboxes', async (req, res) => {
+  router.post('/mailboxes', async (req, res) => {
     try {
       const { address } = req.body ?? {}; 
       if (!address)
@@ -83,7 +85,7 @@ export function createApiServer(): Server {
     }
   });
 
-  app.post('/mailboxes/:address/messages', async(req, res) => {
+  router.post('/mailboxes/:address/messages', async(req, res) => {
     try {
       const addr = normalizeAddress(req.params.address);
 
@@ -125,7 +127,7 @@ export function createApiServer(): Server {
     }
   })
 
-  app.get('/messages/:id', async(req, res)=> {
+  router.get('/messages/:id', async(req, res)=> {
     try {
       const msg = await prisma.message.findUnique({
         where: {id: req.params.id},
@@ -175,6 +177,9 @@ export function createApiServer(): Server {
       res.status(500).json({error: 'Failed to fetch message'});
     }
   })
+
+  // Mount all routes under /api prefix
+  app.use('/api', router);
 
   return app;
 }

@@ -4,8 +4,8 @@ import type { Message, MessageDetail } from './types';
 
 async function checkBackendHealth(): Promise<boolean> {
   try {
-    console.log('Checking backend health at:', API_BASE + '/health');
-    const response = await fetch(`${API_BASE}/health`, { 
+    console.log('Checking backend health at:', API_BASE + '/api/health');
+    const response = await fetch(`${API_BASE}/api/health`, { 
       method: 'GET',
       signal: AbortSignal.timeout(10000)
     });
@@ -24,7 +24,7 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
       console.warn(`Health check failed for ${API_BASE}, but attempting to proceed...`);
     }
 
-    const response = await fetch(`${API_BASE}/mailboxes/custom`, {
+    const response = await fetch(`${API_BASE}/api/mailboxes/custom`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -57,7 +57,7 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
 
 export async function fetchMessages(address: string): Promise<{ messages: Message[] }> {
   try {
-    const response = await fetch(`${API_BASE}/mailboxes/${encodeURIComponent(address)}/messages`, {
+    const response = await fetch(`${API_BASE}/api/mailboxes/${encodeURIComponent(address)}/messages`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -77,7 +77,7 @@ export async function fetchMessages(address: string): Promise<{ messages: Messag
 
 export async function fetchMessage(messageId: string): Promise<MessageDetail> {
   try {
-    const response = await fetch(`${API_BASE}/messages/${encodeURIComponent(messageId)}`);
+    const response = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(messageId)}`);
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('API Error:', response.status, errorData);
