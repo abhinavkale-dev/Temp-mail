@@ -1,11 +1,34 @@
 import express from 'express';
 import cors from 'cors';
+import crypto from 'crypto';
 import {prisma} from '../lib/prisma.js';
 import { makeCustomAddress, normalizeAddress, isOurDomain } from '../lib/email.js';
 import rateLimit from './middleware/rateLimit.js';
 
 interface Server {
   listen(port: number, callback?: () => void): void;
+}
+
+// Store active sessions in memory (in production, use Redis or database)
+const activeSessions = new Map<string, { address: string, createdAt: number }>();
+
+function generateSecureToken(): string {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+function validateSession(req: express.Request): { isValid: boolean; address?: string } {
+  const token = req.headers.authorization?.replace('Bearer ', '') || req.query.token as string;
+  
+  if (!token) {
+    return { isValid: false };
+  }
+  
+  const session = activeSessions.get(token);
+  if (!session) {
+    return { isValid: false };
+  }
+  
+  return { isValid: true, address: session.address };
 }
 
 
@@ -50,7 +73,7 @@ export function createApiServer(): Server {
       }
       
       const address = makeCustomAddress(username);
-      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours instead of 7 days
       
       let mailbox = await prisma.mailbox.findUnique({
         where: { address }
@@ -77,11 +100,20 @@ export function createApiServer(): Server {
           timestamp: new Date().toISOString()
         });
       }
+
+      // Generate secure session token
+      const sessionToken = generateSecureToken();
       
+      activeSessions.set(sessionToken, {
+        address: mailbox.address,
+        createdAt: Date.now()
+      });
+
       res.json({
         address: mailbox.address,
         createdAt: mailbox.createdAt,
-        expiresAt: mailbox.expiresAt
+        expiresAt: mailbox.expiresAt,
+        sessionToken: sessionToken // This allows authenticated access
       });
     } catch (error) {
       console.error('Error creating custom mailbox', error);
@@ -199,7 +231,6 @@ export function createApiServer(): Server {
     }
   })
 
-  // Mount all routes under /api prefix
   app.use('/api', router);
 
   return app;

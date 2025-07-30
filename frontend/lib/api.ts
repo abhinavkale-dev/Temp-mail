@@ -44,6 +44,7 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
     }
     
     const data = await response.json();
+    
     return {
       address: data.address,
       createdAt: data.createdAt,
@@ -63,6 +64,7 @@ export async function fetchMessages(address: string): Promise<{ messages: Messag
         'Content-Type': 'application/json',
       },
     });
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('API Error:', response.status, errorData);
@@ -75,9 +77,15 @@ export async function fetchMessages(address: string): Promise<{ messages: Messag
   }
 }
 
-export async function fetchMessage(messageId: string): Promise<MessageDetail> {
+export async function fetchMessage(address: string, messageId: string): Promise<MessageDetail> {
   try {
-    const response = await fetch(`${API_BASE}/api/messages/${encodeURIComponent(messageId)}`);
+    const response = await fetch(`${API_BASE}/api/messages/${messageId}`, {
+      method: 'GET',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+    });
+    
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
       console.error('API Error:', response.status, errorData);

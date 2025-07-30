@@ -14,9 +14,9 @@ export class CleanupScheduler {
       return;
     }
 
-    const CLEANUP_INTERVAL = 60 * 60 * 1000; 
+    const CLEANUP_INTERVAL = 30 * 60 * 1000; 
     
-    console.log('[SCHEDULER] Starting cleanup scheduler (runs every hour)');
+    console.log('[SCHEDULER] Starting cleanup scheduler (runs every 30 minutes)');
     
     this.runCleanup();
     
@@ -69,7 +69,7 @@ export class CleanupScheduler {
   getStatus() {
     return {
       isRunning: this.isRunning,
-      nextCleanup: this.intervalId ? 'Every hour' : 'Not scheduled'
+      nextCleanup: this.intervalId ? 'Every 30 minutes' : 'Not scheduled'
     };
   }
 }
