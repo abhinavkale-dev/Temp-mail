@@ -21,9 +21,9 @@ export function startSmtp(): void {
       }
 
       prisma.mailbox.upsert({
-        where: {address: rcpt},
+        where: { address: rcpt },
         update: {},
-        create: { address: rcpt}
+        create: { address: rcpt, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }
       })
       .then(() => {
         console.log('[RCPT ACCEPTED]', rcpt);
