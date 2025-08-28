@@ -70,6 +70,18 @@ export function createApiServer(): Server {
           timestamp: new Date().toISOString()
         });
       } else {
+        
+        if (!mailbox.expiresAt) {
+          mailbox = await prisma.mailbox.update({
+            where: { id: mailbox.id },
+            data: { expiresAt }
+          });
+          console.log('[MAILBOX EXPIRY UPDATED]', {
+            address: address,
+            expiresAt: expiresAt.toISOString()
+          });
+        }
+        
         console.log('[EXISTING MAILBOX ACCESSED]', {
           username,
           address: address,
@@ -97,7 +109,8 @@ export function createApiServer(): Server {
       if (!isOurDomain(norm))
         return res.status(400).json({ error: 'wrong domain' });
 
-      const mb = await prisma.mailbox.create({ data: { address: norm } });
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+      const mb = await prisma.mailbox.create({ data: { address: norm, expiresAt } });
       res.json({ address: mb.address });
     } catch (e) {
       res.status(409).json({ error: 'address exists' });
