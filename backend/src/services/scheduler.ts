@@ -1,76 +1,56 @@
-import { cleanupExpiredMailboxes, getCleanupStats } from './cleanup.js';
+import { cleanupExpiredMailboxes } from './cleanup.js';
+
+const DEFAULT_INTERVAL =
+  Number(process.env.CLEANUP_INTERVAL_MS ?? 6 * 60 * 60 * 1000); // 6h
+const START_DELAY =
+  Number(process.env.CLEANUP_START_DELAY_MS ?? Math.min(DEFAULT_INTERVAL / 2, 5 * 60 * 1000)); // up to 5m
+const JITTER_PCT = Number(process.env.CLEANUP_JITTER_PCT ?? 0.10); // ±10%
 
 export class CleanupScheduler {
-  private intervalId: NodeJS.Timeout | null = null;
-  private isRunning = false;
-
-  constructor() {
-    this.start();
-  }
+  private timer: NodeJS.Timeout | null = null;
+  private running = false;
 
   start() {
-    if (this.isRunning) {
-      console.log('[SCHEDULER] Cleanup scheduler is already running');
+    if (this.running) {
+      console.log('[SCHEDULER] Already running');
       return;
     }
-
-    const CLEANUP_INTERVAL = 30 * 60 * 1000; 
-    
-    console.log('[SCHEDULER] Starting cleanup scheduler (runs every 30 minutes)');
-    
-    this.runCleanup();
-    
-    this.intervalId = setInterval(() => {
-      this.runCleanup();
-    }, CLEANUP_INTERVAL);
-    
-    this.isRunning = true;
+    this.running = true;
+    console.log(
+      `[SCHEDULER] Enabled. interval≈${Math.round(DEFAULT_INTERVAL / 60000)}min, start in ${Math.round(
+        START_DELAY / 1000
+      )}s`
+    );
+    this.scheduleNext(START_DELAY);
   }
 
   stop() {
-    if (this.intervalId) {
-      clearInterval(this.intervalId);
-      this.intervalId = null;
-    }
-    this.isRunning = false;
-    console.log('[SCHEDULER] Cleanup scheduler stopped');
-  }
-
-  private async runCleanup() {
-    try {
-      console.log('[SCHEDULER] Running scheduled cleanup...');
-      
-      const statsBefore = await getCleanupStats();
-      
-      if (statsBefore.expiredMailboxes === 0) {
-        console.log('[SCHEDULER] No expired mailboxes to clean up');
-        return;
-      }
-      
-      const result = await cleanupExpiredMailboxes();
-      
-      console.log('[SCHEDULER] Cleanup completed', {
-        deletedMailboxes: result.deleted,
-        deletedMessages: result.messages,
-        expiredMailboxesFound: statsBefore.expiredMailboxes,
-        timestamp: new Date().toISOString()
-      });
-      
-    } catch (error) {
-      console.error('[SCHEDULER] Error during scheduled cleanup:', error);
-    }
-  }
-
-  async triggerCleanup() {
-    console.log('[SCHEDULER] Manual cleanup triggered');
-    await this.runCleanup();
+    if (this.timer) clearTimeout(this.timer);
+    this.timer = null;
+    this.running = false;
+    console.log('[SCHEDULER] Stopped');
   }
 
   getStatus() {
-    return {
-      isRunning: this.isRunning,
-      nextCleanup: this.intervalId ? 'Every 30 minutes' : 'Not scheduled'
-    };
+    return { isRunning: this.running };
+  }
+
+  private scheduleNext(baseMs: number) {
+    if (!this.running) return;
+    const jitterFactor = 1 + (Math.random() * 2 * JITTER_PCT - JITTER_PCT); 
+    const delay = Math.max(60_000, Math.round(baseMs * jitterFactor));
+    this.timer = setTimeout(() => this.tick(), delay);
+  }
+
+  private async tick() {
+    if (!this.running) return;
+    try {
+      const res = await cleanupExpiredMailboxes();
+      const next = res.deleted > 0 ? Math.min(DEFAULT_INTERVAL, 30 * 60 * 1000) : DEFAULT_INTERVAL;
+      this.scheduleNext(next);
+    } catch {
+      this.scheduleNext(DEFAULT_INTERVAL);
+    }
   }
 }
 
