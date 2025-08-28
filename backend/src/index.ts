@@ -14,7 +14,6 @@ api.listen(apiPort, () => {
   console.log('Backend ready!');
 });
 
-// NEW: start the scheduler only if enabled
 const cleanupEnabled = (process.env.CLEANUP_ENABLED ?? 'true') !== 'false';
 const leaderOk =
   process.env.CLEANUP_LEADER === undefined ||
