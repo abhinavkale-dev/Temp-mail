@@ -4,8 +4,6 @@ import { cleanupScheduler } from './services/scheduler.js';
 
 console.log('Starting temp-mail backend...');
 
-console.log('🧹 Starting cleanup scheduler...');
-
 startSmtp();
 
 const api = createApiServer();
@@ -15,6 +13,20 @@ api.listen(apiPort, () => {
   console.log(`API listening on :${apiPort}`);
   console.log('Backend ready!');
 });
+
+// NEW: start the scheduler only if enabled
+const cleanupEnabled = (process.env.CLEANUP_ENABLED ?? 'true') !== 'false';
+const leaderOk =
+  process.env.CLEANUP_LEADER === undefined ||
+  process.env.CLEANUP_LEADER === '1' ||
+  process.env.CLEANUP_LEADER === 'true';
+
+if (cleanupEnabled && leaderOk) {
+  console.log('🧹 Cleanup scheduler enabled');
+  cleanupScheduler.start();
+} else {
+  console.log('🧹 Cleanup scheduler disabled (set CLEANUP_ENABLED=true to enable)');
+}
 
 process.on('SIGTERM', () => {
   console.log('🛑 Shutting down servers...');
