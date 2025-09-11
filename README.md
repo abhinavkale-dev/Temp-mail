@@ -2,17 +2,6 @@
 
 A temporary email service with a modern UI that allows users to create disposable email addresses and receive emails without registration.
 
-![Temp-Mail Screenshot](https://via.placeholder.com/800x400?text=Temp-Mail+Screenshot)
-
-## Features
-
-- ✨ Create custom email addresses instantly
-- 📨 Receive real emails through SMTP server
-- 🔄 Auto-refresh with smart polling (reduces frequency when stable)
-- 🌙 Dark mode support
-- 📱 Responsive design for mobile and desktop
-- 🔒 Private and secure - emails auto-delete after 24 hours
-- ⚡ Fast and lightweight interface
 
 ## Project Structure
 
@@ -41,73 +30,147 @@ The project consists of two main parts:
 - PostgreSQL
 - pnpm (recommended) or npm
 
-### Installation
+### Backend Setup
 
-1. Clone the repository:
-
-```bash
-git clone https://github.com/yourusername/temp-mail.git
-cd temp-mail
-```
-
-2. Set up the backend:
+1. Navigate to the backend directory:
 
 ```bash
 cd backend
-pnpm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env with your database credentials
-
-# Run database migrations
-pnpm prisma migrate dev
-
-# Start the backend server
-pnpm dev
 ```
 
-3. Set up the frontend:
+2. Install dependencies:
+
+```bash
+pnpm install
+```
+
+3. Set up environment variables:
+
+Create a `.env` file in the backend directory with the following content:
+
+```
+# Database
+DATABASE_URL=
+
+# Frontend URL for CORS
+FRONTEND_URL=
+CORS_ORIGIN=
+
+# Backend Configuration
+API_PORT=3001
+SMTP_PORT=25
+
+# SMTP Configuration
+SMTP_DOMAIN=
+
+# Environment
+NODE_ENV=production
+
+# Rate Limiting
+RATE_LIMIT_WINDOW_MS=900000
+RATE_LIMIT_MAX=100
+```
+
+4. Run database migrations:
+
+```bash
+pnpm prisma migrate dev
+```
+
+5. Start the backend server:
+
+```bash
+# Development mode
+pnpm dev
+
+# Production mode
+pnpm build
+pnpm start
+```
+
+### Frontend Setup
+
+1. Navigate to the frontend directory:
 
 ```bash
 cd frontend
-pnpm install
-
-# Set up environment variables
-cp .env.example .env
-# Edit .env if needed
-
-# Start the frontend development server
-pnpm dev
 ```
 
-4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+2. Install dependencies:
 
-## API Endpoints
+```bash
+pnpm install
+```
 
-### Backend API
+3. Set up environment variables:
+
+Create a `.env` file in the frontend directory with the following content:
+
+```
+NEXT_PUBLIC_API_BASE=
+```
+
+4. Start the frontend development server:
+
+```bash
+# Development mode
+pnpm dev
+
+# Production mode
+pnpm build
+pnpm start
+```
+
+5. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+
+## Backend Architecture
+
+The backend is built with Node.js and Express, providing both an API server and an SMTP server for receiving emails.
+
+### Key Components
+
+- **API Server**: Handles HTTP requests for creating mailboxes and retrieving messages
+- **SMTP Server**: Receives incoming emails and stores them in the database
+- **Database**: PostgreSQL with Prisma ORM for data storage and retrieval
+- **Rate Limiting**: Prevents abuse by limiting request frequency
+- **Cleanup Service**: Automatically removes expired emails after 24 hours
+
+### API Endpoints
 
 - `POST /api/mailboxes/custom` - Create a custom mailbox
 - `POST /api/mailboxes/:address/messages` - Get messages for a mailbox
 - `GET /api/messages/:id` - Get a specific message
 
-## Architecture
+### Database Schema
 
-### Frontend
+The database uses Prisma ORM with the following main models:
 
-- App Router architecture with Next.js
-- React components with TypeScript
-- Tailwind CSS for styling
-- Client-side state management with React hooks
-- API integration with fetch
+- `Mailbox`: Represents a temporary email address
+- `Message`: Stores received emails with their content and metadata
 
-### Backend
+## Frontend Architecture
 
-- Express.js server
-- SMTP server for receiving emails
-- Prisma ORM for database operations
-- Rate limiting middleware
-- Scheduled cleanup service for expired emails
+The frontend is built with Next.js 15 and React, providing a responsive and modern user interface.
+
+### Key Components
+
+- **Home Page**: Allows users to create custom email addresses
+- **Mailbox Page**: Displays received emails with auto-refresh functionality
+- **Message Detail Page**: Shows the full content of an email
+
+### Technologies Used
+
+- **Next.js**: React framework with App Router
+- **React**: UI library for building components
+- **TypeScript**: Type-safe JavaScript
+- **Tailwind CSS**: Utility-first CSS framework
+- **Sonner**: Toast notifications
+
+### State Management
+
+- React hooks for local state management
+- Smart polling with exponential backoff for API requests
+- Optimized refresh logic to reduce API calls
 
 ## Development
 
@@ -137,25 +200,21 @@ pnpm build
 
 ## Deployment
 
-### Backend
+### Backend Deployment
 
 The backend can be deployed to any Node.js hosting service:
 
-```bash
-cd backend
-pnpm build
-# Deploy the dist folder
-```
+1. Set up the environment variables as described above
+2. Build the project: `pnpm build`
+3. Start the server: `pnpm start`
 
-### Frontend
+### Frontend Deployment
 
 The frontend can be deployed to Vercel or any static hosting service:
 
-```bash
-cd frontend
-pnpm build
-# Deploy the .next folder
-```
+1. Set up the environment variables as described above
+2. Build the project: `pnpm build`
+3. Deploy the `.next` folder
 
 ## Contributing
 
