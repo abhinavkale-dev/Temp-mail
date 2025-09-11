@@ -1,338 +1,486 @@
-'use client';
-import { useState, useEffect, useRef } from 'react';
-import { useParams, useRouter } from 'next/navigation';
-import { createCustomMailbox, fetchMessages, fetchMessage } from '../../../lib/api';
-import { Message, MessageDetail } from '../../../lib/types';
-import { GradientBackground } from '../../../components/GradientBackground';
-import { ErrorAlert } from '@/components/ErrorAlert';
-import { CopyIcon, CopyIconHandle } from '../../../components/ui/copy-icon';
-import { RefreshCWIcon, RefreshCWIconHandle } from '../../../components/ui/refresh-cw-icon';
-import { toast } from 'sonner';
+"use client"
+
+import { useParams } from "next/navigation"
+import { useState, useEffect, useCallback, useRef } from "react"
+import { Button } from "@/components/ui/button"
+import { RefreshCw as Refresh, Lock } from "lucide-react"
+import Link from "next/link"
+import { toast } from "sonner"
+import { Screen } from "@/components/screen"
+import { Header, Footer, BorderDecoration } from "@/components/layout"
+import { fetchMessages } from "@/lib/api"
 
 export default function MailboxPage() {
-  const params = useParams();
-  const router = useRouter();
-  const username = params.username as string;
-  
-  const [address, setAddress] = useState<string | null>(null);
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
-  const copyIconRef = useRef<CopyIconHandle>(null);
-  const refreshIconRef = useRef<RefreshCWIconHandle>(null);
+  const params = useParams()
+  const username = params.username as string
 
-  useEffect(() => {
-    if (username) {
-      generateMailbox(decodeURIComponent(username));
-    }
-  }, [username]);
+  const [emails, setEmails] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [isListening, setIsListening] = useState(true)
+  const [lastChecked, setLastChecked] = useState(new Date())
+  const [failedAttempts, setFailedAttempts] = useState(0)
+  const [apiErrorState, setApiErrorState] = useState(false)
+  const [isRateLimited, setIsRateLimited] = useState(false)
+  const [hasStableEmails, setHasStableEmails] = useState(false)
+  const [stableEmailCount, setStableEmailCount] = useState(0)
+  const retryTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const lastEmailCountRef = useRef<number>(0)
 
-  async function fetchMessagesForAddress(emailAddress: string, showNotification = false) {
-    try {
-      console.log('[DEBUG] Fetching messages for:', emailAddress);
-      const data = await fetchMessages(emailAddress);
-      setMessages(data.messages);
-      if (showNotification && data.messages.length > 0) {
-        toast.success(`Found ${data.messages.length} message${data.messages.length === 1 ? '' : 's'}!`);
-      }
-    } catch (err: any) {
-      console.error('Error fetching messages:', err);
-      if (err.message?.includes('Session expired')) {
-        console.log('[DEBUG] Session expired, redirecting to home');
-        router.push('/');
-      }
-    }
-  }
-
-  async function generateMailbox(targetUsername: string) {
-    if (!targetUsername.trim()) {
-      setError('Invalid username');
-      setLoading(false);
+  const loadEmails = async () => {
+    if (apiErrorState && failedAttempts >= 5) {
       return;
     }
 
-    setLoading(true);
-    setError(null);
-    
+    setLoading(true)
     try {
-      console.log('[DEBUG] Creating mailbox for:', targetUsername);
-      const mailboxData = await createCustomMailbox(targetUsername.trim());
-      console.log('[DEBUG] Mailbox created:', mailboxData);
+      const result = await fetchMessages(`${username}@temp.abhi.at`)
+
+      const newEmails = result.messages || []
+      setEmails(newEmails)
       
-      setAddress(mailboxData.address);
-      setMessages([]);
+      const currentCount = newEmails.length
+      if (currentCount > 0 && currentCount === lastEmailCountRef.current) {
+        setStableEmailCount(prev => prev + 1)
+      } else {
+        setStableEmailCount(0)
+        setHasStableEmails(false)
+      }
+      lastEmailCountRef.current = currentCount
       
-      await fetchMessagesForAddress(mailboxData.address);
-      
-    } catch (err: any) {
-      setError(err.message || 'Failed to create email address');
-      console.error('Error generating mailbox:', err);
+      if (failedAttempts > 0) {
+        setFailedAttempts(0)
+        setApiErrorState(false)
+      }
+    } catch (error) {
+      console.error('Failed to load emails:', error)
+
+      setEmails([])
+
+      const newFailedAttempts = failedAttempts + 1
+      setFailedAttempts(newFailedAttempts)
+      setApiErrorState(true)
+
+      const errorMessage = error instanceof Error ? error.message : String(error)
+      const isRateLimit = errorMessage.includes('429') || errorMessage.includes('Too many requests')
+
+      if (isRateLimit) {
+        setIsRateLimited(true)
+        toast.error("Rate limit exceeded. Polling paused for 2 minutes. Will auto-resume.", {
+          style: {
+            background: 'white',
+            color: 'black',
+            border: '1px solid #ef4444',
+          },
+          duration: 15000,
+        })
+
+        setTimeout(() => {
+          setIsRateLimited(false)
+          setIsListening(true)
+          toast.info("Rate limit period ended. Resuming polling.", {
+            style: {
+              background: 'white',
+              color: 'black',
+              border: '1px solid #22c55e',
+            },
+            duration: 5000,
+          })
+        }, 120000) // 2 minutes
+
+        setIsListening(false)
+        return;
+      } else {
+        toast.error(`Cannot reach server right now. Retry ${newFailedAttempts}/5`, {
+          style: {
+            background: 'white',
+            color: 'black',
+            border: '1px solid #ef4444',
+          },
+        })
+
+        if (newFailedAttempts >= 5) {
+          toast.error("Maximum retry attempts reached. Please refresh the page to try again.", {
+            style: {
+              background: 'white',
+              color: 'black',
+              border: '1px solid #ef4444',
+            },
+            duration: 10000,
+          })
+          setIsListening(false)
+        }
+      }
     } finally {
-      setLoading(false);
-    }
-  }
-
-  function handleBackToHome() {
-    router.push('/');
-  }
-
-  function handleChangeAddress() {
-    router.push('/');
-  }
-
-  async function refreshMessages() {
-    if (!address) return;
-    
-    refreshIconRef.current?.startAnimation();
-    
-    try {
-      await fetchMessagesForAddress(address, true);
-    } catch (err) {
-      console.error('Error fetching messages:', err);
-      toast.error('Failed to refresh messages. Please try again.');
-    } finally {
-      setTimeout(() => {
-        refreshIconRef.current?.stopAnimation();
-      }, 500);
-    }
-  }
-
-  async function handleMessageClick(messageId: string) {
-    router.push(`/mailbox/${encodeURIComponent(username)}/message/${messageId}`);
-  }
-
-  async function handleCopyAddress() {
-    if (!address) return;
-    
-    try {
-      await navigator.clipboard.writeText(address);
-      setCopied(true);
-      copyIconRef.current?.startAnimation();
-      toast.success('Email address copied!');
-      
-      setTimeout(() => {
-        setCopied(false);
-        copyIconRef.current?.stopAnimation();
-      }, 2000);
-    } catch (err) {
-      toast.error('Failed to copy address');
+      setLoading(false)
+      setLastChecked(new Date())
     }
   }
 
   useEffect(() => {
-    if (!address) return;
-    
-    const refreshInterval = messages.length === 0 ? 3000 : 10000;
-    
-    const interval = setInterval(async () => {
-      if (document.hidden) return;
-      
-      try {
-        await fetchMessagesForAddress(address);
-      } catch (err) {
-        console.error('Error fetching messages during auto-refresh:', err);
-      }
-    }, refreshInterval);
-    
-    // Also refresh when tab becomes visible again
-    const handleVisibilityChange = async () => {
-      if (!document.hidden && address) {
-        try {
-          await fetchMessagesForAddress(address);
-        } catch (err) {
-          console.error('Error fetching messages on visibility change:', err);
-        }
-      }
-    };
-    
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    
-    return () => {
-      clearInterval(interval);
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [address, messages.length]);
+    if (stableEmailCount >= 3 && lastEmailCountRef.current > 0) {
+      setHasStableEmails(true)
+    }
+  }, [stableEmailCount])
 
-  if (loading) {
-    return (
-      <div className="min-h-screen relative overflow-hidden">
-        <GradientBackground />
-        <div className="relative z-10 flex flex-col min-h-screen justify-center items-center">
-          <div className="text-center text-[#e8feff] py-12">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-[#00FAFF] mb-4"></div>
-            <p className="text-xl">Loading mailbox for {username}...</p>
-          </div>
-        </div>
-      </div>
-    );
+  useEffect(() => {
+    loadEmails()
+
+    if (retryTimeoutRef.current) {
+      clearTimeout(retryTimeoutRef.current);
+      retryTimeoutRef.current = null;
+    }
+
+    if ((apiErrorState && failedAttempts >= 5) || isRateLimited) {
+      return;
+    }
+
+    const getBackoffTime = () => {
+      if (hasStableEmails && emails.length > 0) {
+        return 30000;
+      }
+      
+      if (failedAttempts === 0) return 10000;
+      return Math.min(Math.pow(2, failedAttempts) * 2000, 60000);
+    };
+
+    const interval = setInterval(() => {
+      if (isListening) {
+        loadEmails()
+      }
+    }, getBackoffTime())
+
+    return () => clearInterval(interval)
+  }, [isListening, failedAttempts, apiErrorState, isRateLimited, hasStableEmails, emails.length])
+
+
+  const manualRefresh = async () => {
+    setApiErrorState(false)
+    setFailedAttempts(0)
+    setIsRateLimited(false)
+    setHasStableEmails(false)
+    setStableEmailCount(0)
+    setIsListening(true)
+
+    toast("Refreshing mailbox...", {
+      style: {
+        background: 'white',
+        color: 'black',
+        border: '1px solid #e5e7eb',
+      },
+    })
+
+    setRefreshing(true)
+    try {
+      await loadEmails()
+      setTimeout(() => {
+        setRefreshing(false)
+        toast.success("Mailbox refreshed!", {
+          style: {
+            background: 'white',
+            color: 'black',
+            border: '1px solid #e5e7eb',
+          },
+        })
+        setLastChecked(new Date())
+      }, 4000)
+    } catch (error) {
+      setRefreshing(false)
+      toast.error("Failed to refresh mailbox. Please try again later.", {
+        style: {
+          background: 'white',
+          color: 'black',
+          border: '1px solid #ef4444',
+        },
+      })
+    }
   }
 
   return (
-    <div className="min-h-screen relative overflow-hidden">
-      <GradientBackground />
-      <div className="relative z-10 flex flex-col min-h-screen py-8">
-        
-        {/* Header */}
-        <header className="border-b border-white/10 px-8 py-6">
-          <div className="max-w-6xl mx-auto flex items-center justify-between">
-            <button
-              onClick={handleBackToHome}
-              className="text-4xl font-bold hover:text-[#00FAFF] transition-colors"
-              style={{ 
-                fontFamily: 'cursive',
-                background: 'linear-gradient(135deg, #00FAFF 0%, #21FF7D 50%, #003F5C 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text'
-              }}
-            >
-              Temp Mail
-            </button>
+    <div
+      className="h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-hidden"
+    >
+      <BorderDecoration />
 
-            <div className="flex items-center gap-6">
-              {/* Email Address */}
-              <div className="flex items-center gap-3 bg-gradient-to-r from-[#00FAFF]/20 to-[#21FF7D]/20 rounded-lg px-6 py-3 border border-[#00FAFF]/30">
-                <span className="text-[#e8feff] font-mono text-lg">
-                  <span className="text-[#00FAFF] font-semibold">{address?.split('@')[0]}</span>
-                  <span className="text-[#21FF7D]">@{address?.split('@')[1]}</span>
-                </span>
-                <button
-                  onClick={handleCopyAddress}
-                  className={`p-1 rounded transition-colors ${
-                    copied 
-                      ? 'text-[#21FF7D]' 
-                      : 'text-[#00FAFF] hover:text-[#6EFFFF]'
-                  }`}
-                  title="Copy to clipboard"
+      <div className="md:hidden flex flex-col min-h-screen">
+        <Header />
+
+        <main className="flex-1 bg-white dark:bg-[#0D0E0E]">
+          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 mb-8">
+
+              <div className="text-center mb-6">
+                <div
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-gray-300 text-gray-900 font-semibold text-lg mb-4 cursor-pointer hover:bg-gray-400 transition-colors"
+                  onClick={() => {
+                    const email = `${username}@temp.abhi.at`;
+                    navigator.clipboard.writeText(email);
+                    toast.success("Email copied to clipboard!");
+                  }}
                 >
-                  <CopyIcon ref={copyIconRef} size={20} />
-                </button>
-              </div>
-
-              {/* Change Address Button */}
-              <button
-                onClick={handleChangeAddress}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all bg-[#21FF7D]/20 text-[#21FF7D] border border-[#21FF7D]/50 hover:bg-[#21FF7D]/30"
-              >
-                <svg className="w-4 h-4" viewBox="0 0 32 32" fill="currentColor">
-                  <path d="M29.999 19.005c0 2.8-1.68 3-2 3H3.411l5.289-5.29-1.41-1.42-6.999 7a1 1 0 0 0 0 1.41l6.999 6.999 1.41-1.41-5.289-5.289h24.588c1.38 0 4-1 4-5v-3h-2v3z"/>
-                  <path d="M2.001 13.005c0-2.8 1.68-3 2-3h24.588l-5.289 5.29 1.41 1.41 6.999-7a1 1 0 0 0 0-1.41L24.71 1.296l-1.42 1.42 5.299 5.289H4.001c-1.38 0-4 1-4 5v-3h2v3z"/>
-                </svg>
-                Change
-              </button>
-            </div>
-          </div>
-        </header>
-
-        {error && (
-          <div className="px-8 pt-6">
-            <div className="max-w-6xl mx-auto">
-              <ErrorAlert message={error} />
-            </div>
-          </div>
-        )}
-
-        <main className="flex-1 flex flex-col justify-center items-center px-8 py-12">
-          <div className="max-w-6xl mx-auto w-full">
-            {messages.length > 0 ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-3xl font-bold text-[#e8feff]">
-                    Mails for "{address?.split('@')[0]}@temp.abhi.at"
-                  </h2>
+                  {username}@temp.abhi.at
+                </div>
+                <div className="flex justify-center gap-3">
                   <button
-                    onClick={refreshMessages}
-                    className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all transform hover:-translate-y-0.5"
-                    style={{
-                      background: 'linear-gradient(135deg,#00FAFF 0%,#21FF7D 100%)',
-                      color: '#002530',
-                      boxShadow: '0 0 0 2px rgba(0,250,255,.35), 0 0 14px rgba(33,255,125,.55)',
+                    type="button"
+                    className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors"
+                    onClick={() => {
+                      const email = `${username}@temp.abhi.at`;
+                      navigator.clipboard.writeText(email);
+                      toast.success("Email copied to clipboard!");
                     }}
                   >
-                    <RefreshCWIcon ref={refreshIconRef} size={16} />
-                    Refresh
+                    <svg width="14" height="14" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                      <path fillRule="evenodd" clipRule="evenodd" d="M24.7397 9.91727V19.9465C24.7397 21.0543 23.8416 21.9524 22.7338 21.9524C22.1799 21.9524 21.7309 21.5033 21.7309 20.9494V14.27C21.7315 13.9643 21.6085 13.6713 21.3899 13.4576L17.8997 10.0075C17.2774 9.37513 16.4301 9.01459 15.5429 9.00461H11.7017C11.1478 9.00461 10.6987 8.55559 10.6987 8.00169V6.87841C10.6987 6.11327 11.0034 5.37962 11.5454 4.83953C12.0873 4.29943 12.822 3.99735 13.5872 4.00002H18.9127C19.6658 4.00761 20.3859 4.31006 20.9186 4.84247L23.9273 7.85125C24.4625 8.40421 24.7549 9.14788 24.7397 9.91727ZM19.8855 13.929L16.8768 10.9202C16.3453 10.386 15.6244 10.0832 14.8709 10.0777H9.54539C7.95407 10.0833 6.66698 11.3748 6.66699 12.9662V25.1116C6.66699 26.7068 7.96018 28 9.55541 28H17.8697C19.4531 27.9835 20.7281 26.6951 20.728 25.1116V15.9348C20.7358 15.1776 20.4479 14.4472 19.9257 13.8989L19.8855 13.929Z" fill="#ffffff"></path>
+                    </svg>
+                    Copy
                   </button>
+                  <Link href="/">
+                    <Button className="bg-red-600 hover:bg-red-700 text-white" size="sm">
+                      Change
+                    </Button>
+                  </Link>
+                  <Button variant="outline" size="sm" onClick={manualRefresh}>
+                    <Refresh className="w-4 h-4 mr-2" />
+                    Manual Refresh
+                  </Button>
+                </div>
+              </div>
+
+
                 </div>
                 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {messages.map((message) => (
-                    <div
-                      key={message.id}
-                      onClick={() => handleMessageClick(message.id)}
-                      className="relative bg-white/5 rounded-lg border-2 border-dashed border-white/20 p-6 cursor-pointer hover:border-[#00FAFF]/50 hover:bg-white/10 transition-all h-[200px] flex flex-col"
-                    >
-                      <div className="absolute inset-0 h-full w-full bg-neutral-800/20 rounded-lg">
-                        <div className="absolute -top-px -left-px h-1 w-1 animate-pulse rounded-full bg-neutral-500"></div>
-                        <div className="absolute -top-px -right-px h-1 w-1 animate-pulse rounded-full bg-neutral-500"></div>
-                        <div className="absolute -bottom-px -left-px h-1 w-1 animate-pulse rounded-full bg-neutral-500"></div>
-                        <div className="absolute -right-px -bottom-px h-1 w-1 animate-pulse rounded-full bg-neutral-500"></div>
-                      </div>
-                      <div className="relative z-10">
-                        <h3 className="text-xl font-bold mb-2 text-[#e8feff] line-clamp-2 flex-none">
-                          {message.subject || "(No Subject)"}
-                        </h3>
-                        <p className="text-lg mb-2 text-[#e8feff]/70 flex-none">
-                          {new Date(message.createdAt).toLocaleDateString()}
-                        </p>
-                        <p className="text-base text-[#e8feff]/60 line-clamp-3 overflow-hidden">
-                          From: {message.from}
-                        </p>
-                      </div>
+            <div className="space-y-4">
+              {refreshing ? (
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-4 text-gray-500 dark:text-gray-400">Refreshing...</p>
+                </div>
+              ) : apiErrorState && failedAttempts >= 5 ? (
+                <div className="text-center py-12 border-2 border-dashed border-red-300 dark:border-red-800 rounded-lg">
+                  <p className="mt-2 text-red-500 dark:text-red-400 font-medium">Server connection error</p>
+                  <p className="mt-2 text-gray-500 dark:text-gray-400">Could not connect to the server after multiple attempts.</p>
+                  <Button variant="outline" size="sm" onClick={manualRefresh} className="mt-4">
+                    Try Again
+                  </Button>
+                </div>
+              ) : emails.length === 0 ? (
+                <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                  <p className="mt-4 text-gray-500 dark:text-gray-400">No emails yet. Check back later!</p>
+                </div>
+              ) : (
+                Array.from({ length: Math.ceil(emails.length / 2) }, (_, i) => {
+                  const email1 = emails[i * 2];
+                  const email2 = emails[i * 2 + 1];
+                  return (
+                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {email1 && (
+                        <Link href={`/mailbox/${username}/message/${email1.id}`}>
+                          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white dark:bg-gray-700 h-full">
+                            <h3 className="text-xl font-semibold mb-1 text-gray-900 dark:text-white">
+                              {email1.subject}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                              {email1.createdAt ? new Date(email1.createdAt).toLocaleDateString('en-US', {
+                                month: 'numeric',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : email1.time}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                              {email1.preview}
+                            </p>
+                          </div>
+                        </Link>
+                      )}
+                      {email2 && (
+                        <Link href={`/mailbox/${username}/message/${email2.id}`}>
+                          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white dark:bg-gray-700 h-full">
+                            <h3 className="text-xl font-semibold mb-1 text-gray-900 dark:text-white">
+                              {email2.subject}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                              {email2.createdAt ? new Date(email2.createdAt).toLocaleDateString('en-US', {
+                                month: 'numeric',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : email2.time}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                              {email2.preview}
+                            </p>
+                          </div>
+                        </Link>
+                      )}
                     </div>
-                  ))}
-                </div>
+                  );
+                })
+              )}
               </div>
-            ) : (
-              <div className="flex flex-col items-center text-center">
-                <div className="w-20 h-20 mb-12">
-                  <svg className="animate-spin w-full h-full text-[#00FAFF]" fill="none" viewBox="0 0 24 24">
-                    <circle 
-                      className="opacity-25" 
-                      cx="12" 
-                      cy="12" 
-                      r="10" 
-                      stroke="currentColor" 
-                      strokeWidth="2"
-                    />
-                    <path 
-                      className="opacity-75" 
-                      fill="currentColor" 
-                      d="m4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                    />
-                  </svg>
-                </div>
-
-                <p className="text-[#e8feff] text-xl mb-4">
-                  Listening for incoming emails...
-                </p>
-                <p className="text-[#e8feff]/60 text-sm mb-8">
-                  Auto-checking every 3 seconds. No manual refresh needed.
-                </p>
-
-                <button
-                  onClick={refreshMessages}
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all bg-white/10 hover:bg-white/20 border border-white/20 hover:border-white/30 text-[#e8feff]"
-                >
-                  <RefreshCWIcon ref={refreshIconRef} size={16} />
-                  Manual Refresh
-                </button>
-              </div>
-            )}
           </div>
         </main>
 
-        <footer className="py-6 text-center border-t border-white/10" style={{ background: 'rgba(0, 20, 30, 0.5)' }}>
-          <div className="max-w-6xl mx-auto">
-            <p className="text-[#e8feff]/80 text-base mb-2">
+        <div className="px-4 py-6 bg-gray-50 dark:bg-[#0D0E0E] border-t border-gray-200 dark:border-gray-700">
+          <div className="max-w-4xl mx-auto text-center">
+            <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-2">
               Your temporary email expires in 24 hours. Only you can access your messages.
             </p>
-            <p className="text-[#e8feff]/60 text-sm">
-              🔒 Private mailbox • No registration required • Auto-cleanup after expiry
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              Private mailbox • No registration required • Auto-cleanup after expiry
             </p>
           </div>
-        </footer>
+        </div>
+
+        <Footer />
+      </div>
+
+      <div className="hidden md:block">
+        <Screen>
+          <Header />
+
+          <main className="flex-1 bg-white dark:bg-[#0D0E0E]">
+            <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+              <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 mb-8">
+
+                <div className="text-center mb-6">
+                <div
+                  className="inline-flex items-center px-4 py-2 rounded-full bg-gray-300 text-gray-900 font-semibold text-lg mb-4 cursor-pointer hover:bg-gray-400 transition-colors"
+                  onClick={() => {
+                    const email = `${username}@temp.abhi.at`;
+                    navigator.clipboard.writeText(email);
+                    toast.success("Email copied to clipboard!");
+                  }}
+                >
+                  {username}@temp.abhi.at
+                </div>
+                  <div className="flex justify-center gap-3">
+                    <button
+                      type="button"
+                      className="inline-flex items-center gap-1 px-3 py-2 bg-green-600 hover:bg-green-700 text-white text-sm rounded-md transition-colors"
+                      onClick={() => {
+                        const email = `${username}@temp.abhi.at`;
+                        navigator.clipboard.writeText(email);
+                        toast.success("Email copied to clipboard!");
+                      }}
+                    >
+                      <svg width="14" height="14" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path fillRule="evenodd" clipRule="evenodd" d="M24.7397 9.91727V19.9465C24.7397 21.0543 23.8416 21.9524 22.7338 21.9524C22.1799 21.9524 21.7309 21.5033 21.7309 20.9494V14.27C21.7315 13.9643 21.6085 13.6713 21.3899 13.4576L17.8997 10.0075C17.2774 9.37513 16.4301 9.01459 15.5429 9.00461H11.7017C11.1478 9.00461 10.6987 8.55559 10.6987 8.00169V6.87841C10.6987 6.11327 11.0034 5.37962 11.5454 4.83953C12.0873 4.29943 12.822 3.99735 13.5872 4.00002H18.9127C19.6658 4.00761 20.3859 4.31006 20.9186 4.84247L23.9273 7.85125C24.4625 8.40421 24.7549 9.14788 24.7397 9.91727ZM19.8855 13.929L16.8768 10.9202C16.3453 10.386 15.6244 10.0832 14.8709 10.0777H9.54539C7.95407 10.0833 6.66698 11.3748 6.66699 12.9662V25.1116C6.66699 26.7068 7.96018 28 9.55541 28H17.8697C19.4531 27.9835 20.7281 26.6951 20.728 25.1116V15.9348C20.7358 15.1776 20.4479 14.4472 19.9257 13.8989L19.8855 13.929Z" fill="#ffffff"></path>
+                      </svg>
+                      Copy
+                    </button>
+                    <Link href="/">
+                      <Button variant="outline" size="sm">
+                        Change
+                      </Button>
+                    </Link>
+                    <Button variant="outline" size="sm" onClick={manualRefresh}>
+                      <Refresh className="w-4 h-4 mr-2" />
+                      Manual Refresh
+                    </Button>
+                  </div>
+                </div>
+
+
+              </div>
+
+              <div className="space-y-4">
+                {refreshing ? (
+                  <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-500 dark:text-gray-400">Refreshing...</p>
+                  </div>
+                ) : isRateLimited ? (
+                  <div className="text-center py-12 border-2 border-dashed border-orange-300 dark:border-orange-800 rounded-lg">
+                    <p className="mt-2 text-orange-500 dark:text-orange-400 font-medium">Rate Limit Active</p>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">Too many requests. Polling paused for 2 minutes.</p>
+                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Will automatically resume</p>
+                  </div>
+                ) : isRateLimited ? (
+                  <div className="text-center py-12 border-2 border-dashed border-orange-300 dark:border-orange-800 rounded-lg">
+                    <p className="mt-2 text-orange-500 dark:text-orange-400 font-medium">Rate Limit Active</p>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">Too many requests. Polling paused for 2 minutes.</p>
+                    <p className="mt-1 text-sm text-gray-400 dark:text-gray-500">Will automatically resume</p>
+                  </div>
+                ) : apiErrorState && failedAttempts >= 5 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-red-300 dark:border-red-800 rounded-lg">
+                    <p className="mt-2 text-red-500 dark:text-red-400 font-medium">Server connection error</p>
+                    <p className="mt-2 text-gray-500 dark:text-gray-400">Could not connect to the server after multiple attempts.</p>
+                    <Button variant="outline" size="sm" onClick={manualRefresh} className="mt-4">
+                      Try Again
+                    </Button>
+                  </div>
+                ) : emails.length === 0 ? (
+                  <div className="text-center py-12 border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                    <p className="mt-4 text-gray-500 dark:text-gray-400">No emails yet. Check back later!</p>
+                  </div>
+              ) : (
+                Array.from({ length: Math.ceil(emails.length / 2) }, (_, i) => {
+                  const email1 = emails[i * 2];
+                  const email2 = emails[i * 2 + 1];
+                  return (
+                    <div key={i} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {email1 && (
+                        <Link href={`/mailbox/${username}/message/${email1.id}`}>
+                          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white dark:bg-gray-700 h-full">
+                            <h3 className="text-xl font-semibold mb-1 text-gray-900 dark:text-white">
+                              {email1.subject}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                              {email1.createdAt ? new Date(email1.createdAt).toLocaleDateString('en-US', {
+                                month: 'numeric',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : email1.time}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                              {email1.preview}
+                            </p>
+                          </div>
+                        </Link>
+                      )}
+                      {email2 && (
+                        <Link href={`/mailbox/${username}/message/${email2.id}`}>
+                          <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 p-4 rounded-lg hover:shadow-md transition-shadow cursor-pointer bg-white dark:bg-gray-700 h-full">
+                            <h3 className="text-xl font-semibold mb-1 text-gray-900 dark:text-white">
+                              {email2.subject}
+                            </h3>
+                            <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+                              {email2.createdAt ? new Date(email2.createdAt).toLocaleDateString('en-US', {
+                                month: 'numeric',
+                                day: 'numeric',
+                                year: 'numeric'
+                              }) : email2.time}
+                            </p>
+                            <p className="text-sm text-gray-600 dark:text-gray-300 line-clamp-2">
+                              {email2.preview}
+                            </p>
+                          </div>
+                        </Link>
+                      )}
+                    </div>
+                  );
+                })
+              )}
+                </div>
+            </div>
+          </main>
+
+          <div className="px-4 py-6 bg-gray-50 dark:bg-[#0D0E0E] border-t border-gray-200 dark:border-gray-700">
+            <div className="max-w-4xl mx-auto text-center">
+              <p className="text-sm text-yellow-600 dark:text-yellow-400 mb-2">
+                Your temporary email expires in 24 hours. Only you can access your messages.
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Private mailbox • No registration required • Auto-cleanup after expiry
+              </p>
+            </div>
+          </div>
+
+          <Footer />
+        </Screen>
       </div>
     </div>
-  );
+  )
 }
