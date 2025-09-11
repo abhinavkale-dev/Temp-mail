@@ -1,23 +1,22 @@
 "use client"
 
+import { useTheme } from "next-themes"
 import { Toaster as Sonner, ToasterProps } from "sonner"
 
 const Toaster = ({ ...props }: ToasterProps) => {
+  const { theme = "system" } = useTheme()
+
   return (
     <Sonner
-      theme="dark"
+      theme={theme as ToasterProps["theme"]}
       className="toaster group"
-      toastOptions={{
-        style: {
-          background: 'rgba(255, 255, 255, 0.1)',
-          backdropFilter: 'blur(20px)',
-          border: '1px solid rgba(255, 255, 255, 0.2)',
-          color: 'white',
-        },
-        className: 'group toast group-[.toaster]:bg-white/10 group-[.toaster]:text-white group-[.toaster]:border-white/20 group-[.toaster]:shadow-lg',
-      }}
-      position="top-right"
-      richColors
+      style={
+        {
+          "--normal-bg": "var(--popover)",
+          "--normal-text": "var(--popover-foreground)",
+          "--normal-border": "var(--border)",
+        } as React.CSSProperties
+      }
       {...props}
     />
   )
