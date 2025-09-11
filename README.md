@@ -2,6 +2,18 @@
 
 A temporary email service with a modern UI that allows users to create disposable email addresses and receive emails without registration.
 
+![Temp-Mail Screenshot](./frontend/public/temp-mail-image.png)
+
+## Features
+
+- ✨ Create custom email addresses instantly
+- 📨 Receive real emails through SMTP server
+- 🔄 Auto-refresh with smart polling (reduces frequency when stable)
+- 🌙 Dark mode support
+- 📱 Responsive design for mobile and desktop
+- 🔒 Private and secure - emails auto-delete after 24 hours
+- ⚡ Fast and lightweight interface
+
 
 ## Project Structure
 
