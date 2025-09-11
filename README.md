@@ -4,16 +4,6 @@ A temporary email service with a modern UI that allows users to create disposabl
 
 ![Temp-Mail Screenshot](./frontend/public/temp-mail-image.png)
 
-## Features
-
-- ✨ Create custom email addresses instantly
-- 📨 Receive real emails through SMTP server
-- 🔄 Auto-refresh with smart polling (reduces frequency when stable)
-- 🌙 Dark mode support
-- 📱 Responsive design for mobile and desktop
-- 🔒 Private and secure - emails auto-delete after 24 hours
-- ⚡ Fast and lightweight interface
-
 
 ## Project Structure
 
@@ -227,11 +217,3 @@ The frontend can be deployed to Vercel or any static hosting service:
 1. Set up the environment variables as described above
 2. Build the project: `pnpm build`
 3. Deploy the `.next` folder
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-This project is licensed under the MIT License - see the LICENSE file for details.
