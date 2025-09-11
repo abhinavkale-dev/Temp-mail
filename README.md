@@ -1,36 +1,166 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Temp-Mail
+
+A temporary email service with a modern UI that allows users to create disposable email addresses and receive emails without registration.
+
+![Temp-Mail Screenshot](https://via.placeholder.com/800x400?text=Temp-Mail+Screenshot)
+
+## Features
+
+- ✨ Create custom email addresses instantly
+- 📨 Receive real emails through SMTP server
+- 🔄 Auto-refresh with smart polling (reduces frequency when stable)
+- 🌙 Dark mode support
+- 📱 Responsive design for mobile and desktop
+- 🔒 Private and secure - emails auto-delete after 24 hours
+- ⚡ Fast and lightweight interface
+
+## Project Structure
+
+The project consists of two main parts:
+
+### Frontend
+
+- Built with Next.js 15
+- Uses React with TypeScript
+- Styled with Tailwind CSS
+- Located in the `/frontend` directory
+
+### Backend
+
+- Node.js with Express
+- TypeScript
+- SMTP server for receiving emails
+- PostgreSQL database with Prisma ORM
+- Located in the `/backend` directory
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js (v18+)
+- PostgreSQL
+- pnpm (recommended) or npm
+
+### Installation
+
+1. Clone the repository:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+git clone https://github.com/yourusername/temp-mail.git
+cd temp-mail
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+2. Set up the backend:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+cd backend
+pnpm install
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+# Set up environment variables
+cp .env.example .env
+# Edit .env with your database credentials
 
-## Learn More
+# Run database migrations
+pnpm prisma migrate dev
 
-To learn more about Next.js, take a look at the following resources:
+# Start the backend server
+pnpm dev
+```
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+3. Set up the frontend:
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```bash
+cd frontend
+pnpm install
 
-## Deploy on Vercel
+# Set up environment variables
+cp .env.example .env
+# Edit .env if needed
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+# Start the frontend development server
+pnpm dev
+```
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+4. Open [http://localhost:3000](http://localhost:3000) in your browser to see the application.
+
+## API Endpoints
+
+### Backend API
+
+- `POST /api/mailboxes/custom` - Create a custom mailbox
+- `POST /api/mailboxes/:address/messages` - Get messages for a mailbox
+- `GET /api/messages/:id` - Get a specific message
+
+## Architecture
+
+### Frontend
+
+- App Router architecture with Next.js
+- React components with TypeScript
+- Tailwind CSS for styling
+- Client-side state management with React hooks
+- API integration with fetch
+
+### Backend
+
+- Express.js server
+- SMTP server for receiving emails
+- Prisma ORM for database operations
+- Rate limiting middleware
+- Scheduled cleanup service for expired emails
+
+## Development
+
+### Running Tests
+
+```bash
+# Backend tests
+cd backend
+pnpm test
+
+# Frontend tests
+cd frontend
+pnpm test
+```
+
+### Building for Production
+
+```bash
+# Build backend
+cd backend
+pnpm build
+
+# Build frontend
+cd frontend
+pnpm build
+```
+
+## Deployment
+
+### Backend
+
+The backend can be deployed to any Node.js hosting service:
+
+```bash
+cd backend
+pnpm build
+# Deploy the dist folder
+```
+
+### Frontend
+
+The frontend can be deployed to Vercel or any static hosting service:
+
+```bash
+cd frontend
+pnpm build
+# Deploy the .next folder
+```
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
+
+## License
+
+This project is licensed under the MIT License - see the LICENSE file for details.

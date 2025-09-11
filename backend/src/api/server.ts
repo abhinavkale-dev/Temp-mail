@@ -20,7 +20,9 @@ export function createApiServer(): Server {
       const allowedOrigins = [
         'https://temp-mail.abhi.at',
         'http://localhost:3000',
-        'http://127.0.0.1:3000'
+        'http://127.0.0.1:3000',
+        'http://localhost:3001',
+        'http://127.0.0.1:3001'
       ];
       
       if (allowedOrigins.includes(origin)) {
@@ -131,6 +133,7 @@ export function createApiServer(): Server {
               id: true,
               from: true,
               subject: true,
+              raw: true,
               createdAt: true,
             }
           }
@@ -139,19 +142,42 @@ export function createApiServer(): Server {
 
       if(!mb) return res.status(404).json({error: 'not found'});
 
+      const messagesWithPreview = await Promise.all(
+        mb.messages.map(async (msg) => {
+          let preview = '';
+          try {
+            const { simpleParser } = await import('mailparser');
+            const parsed = await simpleParser(Buffer.from(msg.raw));
+            const textContent = parsed.text || (parsed.html ? parsed.html.replace(/<[^>]*>/g, '') : '') || '';
+            preview = textContent.substring(0, 150).trim();
+            if (textContent.length > 150) preview += '...';
+          } catch (e) {
+            preview = 'Unable to load preview';
+          }
+
+          return {
+            id: msg.id,
+            from: msg.from,
+            subject: msg.subject || '(No Subject)',
+            preview,
+            createdAt: msg.createdAt.toISOString(),
+          };
+        })
+      );
+
       console.log('[MESSAGES ACCESSED]', {
         address: addr,
-        messageCount: mb.messages.length,
+        messageCount: messagesWithPreview.length,
         timestamp: new Date().toISOString(),
         userAgent: req.headers['user-agent']?.slice(0, 50) || 'unknown'
       });
 
       res.json({
         address: mb.address,
-        createdAt: mb.createdAt,
-        expiresAt: mb.expiresAt,
-        messageCount: mb.messages.length,
-        messages: mb.messages,
+        createdAt: mb.createdAt.toISOString(),
+        expiresAt: mb.expiresAt?.toISOString() || null,
+        messageCount: messagesWithPreview.length,
+        messages: messagesWithPreview,
       });
     } catch (error) {
       console.error('Error fetching messages', error);
@@ -191,8 +217,8 @@ export function createApiServer(): Server {
         id: msg.id,
         from: msg.from,
         subject: msg.subject,
-        body: msg.raw, 
-        createdAt: msg.createdAt,
+        body: msg.raw,
+        createdAt: msg.createdAt.toISOString(),
         mailbox: msg.mailbox.address,
         parsedData: {
           subject: parsed.subject || '',
@@ -201,7 +227,7 @@ export function createApiServer(): Server {
           html: parsed.html || '',
           textAsHtml: parsed.textAsHtml || '',
           attachments: parsed.attachments || [],
-          date: parsed.date || new Date(msg.createdAt),
+          date: (parsed.date || new Date(msg.createdAt)).toISOString(),
         }
       });
     } catch (error) {
