@@ -23,14 +23,14 @@ export function Header() {
   }`
   return (
     <header
-      className="flex h-16 items-center justify-between border-b border-dashed dark:border-gray-700 px-4 bg-white dark:bg-[#0D0E0E] text-black dark:text-white"
+      className="flex h-16 min-h-[64px] items-center justify-between border-b border-dashed dark:border-gray-700 px-4 bg-white dark:bg-[#0D0E0E] text-black dark:text-white"
     >
       <a className="flex flex-row items-center gap-2" href="/">
         <svg width="32" height="32" viewBox="0 0 100 100">
           <path
             d="M20 15 C15 15, 10 20, 10 25 L10 35 C10 40, 15 45, 20 45 L25 45 L25 75 C25 80, 30 85, 35 85 L40 85 C45 85, 50 80, 50 75 L50 45 L55 45 C60 45, 65 40, 65 35 L65 25 C65 20, 60 15, 55 15 Z"
             fill="none"
-            stroke="white"
+            stroke={isDark ? "white" : "black"}
             strokeWidth="6"
             strokeLinecap="round"
             strokeLinejoin="round"

@@ -2,98 +2,205 @@ const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001';
 
 import type { Message, MessageDetail } from './types';
 
-async function checkBackendHealth(): Promise<boolean> {
-  try {
-    console.log('Checking backend health at:', API_BASE + '/api/health');
-    const response = await fetch(`${API_BASE}/api/health`, { 
-      method: 'GET',
-      signal: AbortSignal.timeout(10000)
-    });
-    console.log('Health check response:', response.status, response.statusText);
-    return response.ok;
-  } catch (error) {
-    console.error('Health check failed:', error);
-    return false;
+const requestCache = new Map<string, { data: any; timestamp: number; promise?: Promise<any> }>();
+const pendingRequests = new Map<string, Promise<any>>();
+const CACHE_DURATION = 30000;
+
+function getCachedData(key: string) {
+  const cached = requestCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+    console.log(`Cache hit for ${key}`);
+    return cached.data;
   }
+  return null;
 }
+
+function setCachedData(key: string, data: any) {
+  requestCache.set(key, { data, timestamp: Date.now() });
+}
+
+export function clearCache() {
+  requestCache.clear();
+  pendingRequests.clear();
+  console.log('API cache cleared');
+}
+
+export function clearCacheForAddress(address: string) {
+  const username = address.split('@')[0];
+  const keys = [`messages-${address}`, `mailbox-${username}`];
+  keys.forEach(key => {
+    requestCache.delete(key);
+    pendingRequests.delete(key);
+  });
+  console.log(`Cache cleared for address: ${address}`);
+}
+
+function deduplicate<T>(key: string, request: () => Promise<T>): Promise<T> {
+  if (pendingRequests.has(key)) {
+    console.log(`Deduplicating request for ${key}`);
+    return pendingRequests.get(key)!;
+  }
+
+  const promise = request().finally(() => {
+    pendingRequests.delete(key);
+  });
+  
+  pendingRequests.set(key, promise);
+  return promise;
+}
+
 
 export async function createCustomMailbox(username: string): Promise<{ address: string; createdAt: string; expiresAt: string | null }> {
-  try {
-    const isHealthy = await checkBackendHealth();
-    if (!isHealthy) {
-      console.warn(`Health check failed for ${API_BASE}, but attempting to proceed...`);
-    }
+  const cacheKey = `mailbox-${username}`;
+  
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return cached;
+  }
 
-    const response = await fetch(`${API_BASE}/api/mailboxes/custom`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ username }),
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('API Error:', response.status, errorData);
+  return deduplicate(cacheKey, async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/mailboxes/custom`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ username })
+      });
       
-      if (!isHealthy) {
-        throw new Error(`Backend server is not responding. Health check failed for ${API_BASE} and API call returned ${response.status}: ${errorData.error || response.statusText}`);
-      } else {
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 429) {
+          console.log('Rate limit hit on mailbox creation');
+          
+          const fallbackData = {
+            address: `${username}@temp.abhi.at`,
+            createdAt: new Date().toISOString(),
+            expiresAt: null
+          };
+          setCachedData(cacheKey, fallbackData);
+          return fallbackData;
+        }
+        
         throw new Error(`Failed to create custom mailbox: ${response.status} ${errorData.error || response.statusText}`);
       }
+      
+      const data = await response.json();
+      const result = {
+        address: data.address,
+        createdAt: data.createdAt,
+        expiresAt: data.expiresAt
+      };
+      
+      setCachedData(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.error('Error creating custom mailbox:', error);
+      throw error;
     }
-    
-    const data = await response.json();
-    
-    return {
-      address: data.address,
-      createdAt: data.createdAt,
-      expiresAt: data.expiresAt
-    };
-  } catch (error) {
-    console.error('Error creating custom mailbox:', error);
-    throw error;
-  }
+  });
 }
 
-export async function fetchMessages(address: string): Promise<{ messages: Message[] }> {
-  try {
-    const response = await fetch(`${API_BASE}/api/mailboxes/${encodeURIComponent(address)}/messages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('API Error:', response.status, errorData);
-      throw new Error(`Failed to fetch messages: ${response.status} ${errorData.error || response.statusText}`);
+export async function fetchMessages(address: string, forceRefresh = false): Promise<{ messages: Message[] }> {
+  const cacheKey = `messages-${address}`;
+  
+  if (!forceRefresh) {
+    const cached = getCachedData(cacheKey);
+    if (cached) {
+      return cached;
     }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching messages:', error);
-    throw error;
   }
+
+  return deduplicate(cacheKey, async () => {
+    try {
+      const username = address.split('@')[0];
+      const mailboxCacheKey = `mailbox-${username}`;
+      if (!getCachedData(mailboxCacheKey)) {
+        try {
+          await createCustomMailbox(username);
+        } catch (mailboxError) {
+          console.warn('Mailbox creation failed, continuing with message fetch:', mailboxError);
+        }
+      }
+      
+      const response = await fetch(`${API_BASE}/api/mailboxes/${encodeURIComponent(address)}/messages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 429) {
+          console.log('Rate limit hit on message fetch');
+          
+          const fallbackData = { messages: [] };
+          return fallbackData;
+        }
+        
+        throw new Error(`Failed to fetch messages: ${response.status} ${errorData.error || response.statusText}`);
+      }
+      
+      const result = await response.json();
+      setCachedData(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.error('Error fetching messages:', error);
+      throw error;
+    }
+  });
 }
 
-export async function fetchMessage(address: string, messageId: string): Promise<MessageDetail> {
-  try {
-    const response = await fetch(`${API_BASE}/api/messages/${messageId}`, {
-      method: 'GET',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-    
-    if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      console.error('API Error:', response.status, errorData);
-      throw new Error(`Failed to fetch message: ${response.status} ${errorData.error || response.statusText}`);
-    }
-    return await response.json();
-  } catch (error) {
-    console.error('Error fetching message:', error);
-    throw error;
+export async function fetchMessage(messageId: string): Promise<MessageDetail> {
+  const cacheKey = `message-${messageId}`;
+  
+  const cached = getCachedData(cacheKey);
+  if (cached) {
+    return cached;
   }
+
+  return deduplicate(cacheKey, async () => {
+    try {
+      const response = await fetch(`${API_BASE}/api/messages/${messageId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 429) {
+          console.log('Rate limit hit on individual message fetch');
+          
+          await new Promise(resolve => setTimeout(resolve, 2000));
+          const retryResponse = await fetch(`${API_BASE}/api/messages/${messageId}`, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            }
+          });
+          
+          if (retryResponse.ok) {
+            const result = await retryResponse.json();
+            setCachedData(cacheKey, result);
+            return result;
+          }
+        }
+        
+        throw new Error(`Failed to fetch message: ${response.status} ${errorData.error || response.statusText}`);
+      }
+      
+      const result = await response.json();
+      setCachedData(cacheKey, result);
+      return result;
+    } catch (error) {
+      console.error('Error fetching message:', error);
+      throw error;
+    }
+  });
 }
