@@ -91,7 +91,7 @@ export default function MailboxPage() {
   }, [stableEmailCount])
 
   useEffect(() => {
-    loadEmails()
+    loadEmails(true)
   }, [])
 
   useEffect(() => {
@@ -106,10 +106,11 @@ export default function MailboxPage() {
 
     const getBackoffTime = () => {
       if (hasStableEmails && emails.length > 0) {
-        return 60000; 
+        return 120000; 
       }
       
-      if (failedAttempts === 0) return 30000; // 30 seconds normally
+      if (failedAttempts === 0) return 45000;
+      
       return Math.min(Math.pow(2, failedAttempts) * 5000, 300000);
     };
 
@@ -297,7 +298,7 @@ export default function MailboxPage() {
   };
 
   return (
-    <div className="h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-hidden">
+    <div className="min-h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-y-auto">
       <BorderDecoration />
 
       {/* Mobile View */}
@@ -324,7 +325,7 @@ export default function MailboxPage() {
         <Screen>
           <Header />
 
-          <main className="flex-1 bg-white dark:bg-[#0D0E0E]">
+          <main className="flex-1 bg-white dark:bg-[#0D0E0E] overflow-y-auto">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
               <div className="border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-6 mb-8">
                 <MailboxHeader />

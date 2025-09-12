@@ -10,17 +10,22 @@ export default function HomePage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
   }
+  
+  const validateUsername = (input: string): string => {
+    const beforeAtSign = input.split('@')[0];
+    return beforeAtSign.toLowerCase().replace(/[^a-z0-9]/g, '');
+  }
 
   return (
     <div
-      className="h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-hidden"
+      className="min-h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-y-auto"
     >
       <BorderDecoration />
 
       <div className="md:hidden flex flex-col min-h-screen">
         <Header />
 
-        <main className="flex-1 bg-white dark:bg-[#0D0E0E]">
+        <main className="flex-1 bg-white dark:bg-[#0D0E0E] overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center justify-center h-full">
             <div className="temp-emailbox w-full max-w-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8">
               <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
@@ -34,10 +39,17 @@ export default function HomePage() {
                       type="text"
                       value={username}
                       placeholder="Enter your username"
-                      onChange={(e) => setUsername(e.target.value)}
+                      onChange={(e) => setUsername(validateUsername(e.target.value))}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && username.trim()) {
-                          window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
+
+                          fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'}/api/mailboxes/custom`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: username.trim() })
+                          }).finally(() => {
+                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
+                          })
                         }
                       }}
                       className="emailbox-input w-full px-6 py-4 pr-20 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none text-lg font-bold"
@@ -48,7 +60,13 @@ export default function HomePage() {
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black text-white hover:bg-gray-800 rounded-full flex items-center justify-center transition-colors"
                       onClick={() => {
                         if (username.trim()) {
-                          window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
+                          fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'}/api/mailboxes/custom`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: username.trim() })
+                          }).finally(() => {
+                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
+                          })
                         }
                       }}
                     >
@@ -66,6 +84,9 @@ export default function HomePage() {
                 </div>
                 <p className="text-center mt-4 text-sm text-gray-600 dark:text-gray-400">
                   Your email will be: <span className="font-bold">{username || "username"}</span>@temp.abhi.at
+                </p>
+                <p className="text-center mt-2 text-xs text-gray-500 dark:text-gray-500">
+                  Only lowercase letters and numbers are allowed
                 </p>
               </form>
             </div>
@@ -102,7 +123,7 @@ export default function HomePage() {
         <Screen>
           <Header />
 
-          <main className="flex-1 bg-white dark:bg-[#0D0E0E]">
+          <main className="flex-1 bg-white dark:bg-[#0D0E0E] overflow-y-auto">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center justify-center h-full">
               <div className="temp-emailbox w-full max-w-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8">
                 <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
@@ -116,10 +137,17 @@ export default function HomePage() {
                         type="text"
                         value={username}
                         placeholder="Enter your username"
-                        onChange={(e) => setUsername(e.target.value)}
+                        onChange={(e) => setUsername(validateUsername(e.target.value))}
                         onKeyPress={(e) => {
                           if (e.key === 'Enter' && username.trim()) {
+                            // Pre-create the mailbox before redirecting
+                          fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'}/api/mailboxes/custom`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: username.trim() })
+                          }).finally(() => {
                             window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
+                          })
                           }
                         }}
                         className="emailbox-input w-full px-6 py-4 pr-20 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none text-lg font-bold"
@@ -130,7 +158,13 @@ export default function HomePage() {
                         className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black text-white hover:bg-gray-800 rounded-full flex items-center justify-center transition-colors"
                         onClick={() => {
                           if (username.trim()) {
+                          fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'}/api/mailboxes/custom`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ username: username.trim() })
+                          }).finally(() => {
                             window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
+                          })
                           }
                         }}
                       >

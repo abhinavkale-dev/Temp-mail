@@ -4,7 +4,7 @@ import type { Message, MessageDetail } from './types';
 
 const requestCache = new Map<string, { data: any; timestamp: number; promise?: Promise<any> }>();
 const pendingRequests = new Map<string, Promise<any>>();
-const CACHE_DURATION = 30000;
+const CACHE_DURATION = 60000; 
 
 function getCachedData(key: string) {
   const cached = requestCache.get(key);
@@ -60,12 +60,15 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
 
   return deduplicate(cacheKey, async () => {
     try {
-      const response = await fetch(`${API_BASE}/api/mailboxes/custom`, {
+      // Add cache-busting parameter to avoid 429 errors
+      const cacheBuster = `?_=${Date.now()}`;
+      const response = await fetch(`${API_BASE}/api/mailboxes/custom${cacheBuster}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ username })
+        body: JSON.stringify({ username }),
+        cache: 'no-store' // Ensure we don't use browser cache
       });
       
       if (!response.ok) {
@@ -124,11 +127,14 @@ export async function fetchMessages(address: string, forceRefresh = false): Prom
         }
       }
       
-      const response = await fetch(`${API_BASE}/api/mailboxes/${encodeURIComponent(address)}/messages`, {
+      // Add cache-busting parameter to avoid 429 errors from browser caching
+      const cacheBuster = forceRefresh ? `?_=${Date.now()}` : '';
+      const response = await fetch(`${API_BASE}/api/mailboxes/${encodeURIComponent(address)}/messages${cacheBuster}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-        }
+        },
+        cache: 'no-store' // Ensure we don't use browser cache
       });
       
       if (!response.ok) {
