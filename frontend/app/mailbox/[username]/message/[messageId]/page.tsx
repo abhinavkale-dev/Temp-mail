@@ -25,7 +25,7 @@ export default function MessagePage() {
     const loadMessage = async () => {
       setLoading(true)
       try {
-        const messageData = await fetchMessage(messageId)
+        const messageData = await fetchMessage(`${params.username}@temp.abhi.at`, messageId)
         setMessage(messageData)
       } catch (error) {
         console.error('Failed to load message from API:', error)
@@ -45,16 +45,16 @@ export default function MessagePage() {
   if (loading) {
     return (
       <div
-        className="min-h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-y-auto"
+        className="h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-hidden"
       >
         <BorderDecoration />
 
         {/* Mobile loading */}
         <div className="md:hidden">
-          <div className="flex items-center justify-center min-h-screen">
+          <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>
-              <p className="mt-4 text-gray-500 dark:text-gray-400 text-lg">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+              <p className="mt-4 text-gray-500 dark:text-gray-400">
                 Loading message...
               </p>
             </div>
@@ -66,8 +66,8 @@ export default function MessagePage() {
           <Screen>
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-500 mx-auto"></div>
-                <p className="mt-4 text-gray-500 dark:text-gray-400 text-lg">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
+                <p className="mt-4 text-gray-500 dark:text-gray-400">
                   Loading message...
                 </p>
               </div>
@@ -81,14 +81,14 @@ export default function MessagePage() {
   if (!message) {
     return (
       <div
-        className="min-h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-y-auto"
+        className="h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-hidden"
       >
         <div className="md:hidden">
-          <div className="flex items-center justify-center min-h-screen">
+          <div className="flex items-center justify-center h-full">
             <div className="text-center">
-              <p className="text-gray-500 dark:text-gray-400 text-lg">Message not found</p>
+              <p className="text-gray-500 dark:text-gray-400">Message not found</p>
               <Link href="/">
-                <Button className="mt-6">Go Home</Button>
+                <Button className="mt-4">Go Home</Button>
               </Link>
             </div>
           </div>
@@ -98,9 +98,9 @@ export default function MessagePage() {
           <Screen>
             <div className="flex items-center justify-center h-full">
               <div className="text-center">
-                <p className="text-gray-500 dark:text-gray-400 text-lg">Message not found</p>
+                <p className="text-gray-500 dark:text-gray-400">Message not found</p>
                 <Link href="/">
-                  <Button className="mt-6">Go Home</Button>
+                  <Button className="mt-4">Go Home</Button>
                 </Link>
               </div>
             </div>
@@ -112,15 +112,15 @@ export default function MessagePage() {
 
   return (
     <div
-      className="min-h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-y-auto"
+      className="h-screen bg-gray-100 dark:bg-[#0D0E0E] relative overflow-hidden"
     >
       <BorderDecoration />
 
-      <div className="md:hidden flex flex-col">
+      <div className="md:hidden flex flex-col min-h-screen">
         <Header />
 
         <main className="flex-1 bg-white dark:bg-[#0D0E0E]">
-          <div className="max-w-4xl mx-auto px-3 py-6 sm:px-6">
+          <div className="max-w-4xl mx-auto p-6">
             <div className="flex items-center gap-4 mb-6">
               <Link href={`/mailbox/${username}`}>
                 <Button variant="outline" size="sm">
@@ -153,17 +153,21 @@ export default function MessagePage() {
                   </p>
                 </div>
                 
-                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 overflow-auto max-h-[60vh]">
-                  <div className="text-sm text-gray-600 dark:text-gray-400 prose max-w-none dark:prose-invert"
-                       style={{ maxWidth: '100%', wordBreak: 'break-word' }}
-                       dangerouslySetInnerHTML={{ 
-                         __html: message.parsedData?.html || 
-                                `<p>${message.parsedData?.text || message.preview || "No content available"}</p>` 
-                       }}
-                  />
+                {/* Email Preview Section */}
+                <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700">
+                  <h2 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Email Preview:</h2>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {message.parsedData?.text || message.preview || "No preview available"}
+                  </p>
                 </div>
               </div>
 
+              <div className="p-6">
+                <div
+                  className="prose dark:prose-invert max-w-none"
+                  dangerouslySetInnerHTML={{ __html: message.content }}
+                />
+              </div>
             </div>
           </div>
         </main>
@@ -176,7 +180,7 @@ export default function MessagePage() {
           <Header />
 
           <main className="flex-1 bg-white dark:bg-[#0D0E0E]">
-            <div className="max-w-4xl mx-auto px-3 py-6 sm:px-6">
+            <div className="max-w-4xl mx-auto p-6">
               <div className="flex items-center gap-4 mb-6">
                 <Link href={`/mailbox/${username}`}>
                   <Button variant="outline" size="sm">
@@ -209,17 +213,23 @@ export default function MessagePage() {
                   </p>
                   </div>
                   
-                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 overflow-x-auto">
-                    <div className="text-sm text-gray-600 dark:text-gray-400 prose max-w-none dark:prose-invert"
-                         style={{ maxWidth: '100%', wordBreak: 'break-word' }}
+                  {/* Email Preview Section */}
+                  <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700">
+                    <div className="text-sm text-gray-600 dark:text-gray-400 prose-sm max-w-none dark:prose-invert"
                          dangerouslySetInnerHTML={{ 
                            __html: message.parsedData?.html || 
-                                  `<p>${message.parsedData?.text || message.preview || "No content available"}</p>` 
+                                  `<p>${message.parsedData?.text || message.preview || "No preview available"}</p>` 
                          }}
                     />
                   </div>
                 </div>
 
+                <div className="p-6">
+                  <div
+                    className="prose dark:prose-invert max-w-none"
+                    dangerouslySetInnerHTML={{ __html: message.content }}
+                  />
+                </div>
               </div>
             </div>
           </main>

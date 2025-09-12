@@ -75,6 +75,7 @@
   --sidebar-border: oklch(0.269 0 0);
   --sidebar-ring: oklch(0.439 0 0);
   --font-custom: var(--font-custom);
+  /* Added headline font for dark mode */
   --font-headline: var(--font-headline);
 }
 
@@ -118,6 +119,7 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
   --font-custom: var(--font-custom);
+  /* Added headline font to theme configuration */
   --font-headline: var(--font-headline);
 }
 
