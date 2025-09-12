@@ -140,7 +140,6 @@ export default function HomePage() {
                         onChange={(e) => setUsername(validateUsername(e.target.value))}
                         onKeyPress={(e) => {
                           if (e.key === 'Enter' && username.trim()) {
-                            // Pre-create the mailbox before redirecting
                           fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'}/api/mailboxes/custom`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
