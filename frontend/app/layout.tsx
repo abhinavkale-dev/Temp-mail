@@ -22,7 +22,29 @@ const featuresFont = {
 
 export const metadata: Metadata = {
   title: "Temp Mail",
-  description: "Temporary email service",
+  description: "Temporary email service - Create disposable email addresses and receive emails without registration",
+  openGraph: {
+    title: "Temp Mail - Temporary Email Service",
+    description: "Create disposable email addresses and receive emails without registration. Your temporary email service for privacy.",
+    url: "https://temp.abhi.at",
+    siteName: "Temp Mail",
+    images: [
+      {
+        url: "/Temp-mail-opengraph.png",
+        width: 1200,
+        height: 630,
+        alt: "Temp Mail - Temporary Email Service",
+      },
+    ],
+    locale: "en_US",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Temp Mail - Temporary Email Service",
+    description: "Create disposable email addresses and receive emails without registration.",
+    images: ["/Temp-mail-opengraph.png"],
+  },
 };
 
 export default function RootLayout({
