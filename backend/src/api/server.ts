@@ -2,7 +2,6 @@ import express from 'express';
 import cors from 'cors';
 import {prisma} from '../lib/prisma.js';
 import { makeCustomAddress, normalizeAddress, isOurDomain } from '../lib/email.js';
-import rateLimit from './middleware/rateLimit.js';
 
 interface Server {
   listen(port: number, callback?: () => void): void;
@@ -36,7 +35,6 @@ export function createApiServer(): Server {
   };
   
   app.use(cors(corsOptions));
-  app.use(rateLimit);
 
   const router = express.Router();
 
@@ -123,47 +121,107 @@ export function createApiServer(): Server {
     try {
       const addr = normalizeAddress(req.params.address);
 
-      const mb = await prisma.mailbox.findUnique({
-        where: {address: addr},
-        include: {
-          messages: {
-            orderBy: {createdAt: 'desc'},
-            take: 50,
-            select: {
-              id: true,
-              from: true,
-              subject: true,
-              raw: true,
-              createdAt: true,
+      let mb;
+      try {
+        mb = await prisma.mailbox.findUnique({
+          where: {address: addr},
+          include: {
+            messages: {
+              orderBy: {createdAt: 'desc'},
+              take: 50,
+              select: {
+                id: true,
+                from: true,
+                subject: true,
+                raw: true,
+                createdAt: true,
+              }
             }
           }
+        });
+      } catch (dbError) {
+        console.error('Database error when finding mailbox:', dbError);
+        return res.json({
+          address: addr,
+          createdAt: new Date().toISOString(),
+          expiresAt: null,
+          messageCount: 0,
+          messages: [],
+        });
+      }
+
+      if(!mb) {
+        try {
+          const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000);
+          mb = await prisma.mailbox.create({ 
+            data: { 
+              address: addr, 
+              expiresAt 
+            },
+            include: {
+              messages: {
+                orderBy: {createdAt: 'desc'},
+                take: 50,
+                select: {
+                  id: true,
+                  from: true,
+                  subject: true,
+                  raw: true,
+                  createdAt: true,
+                }
+              }
+            }
+          });
+          console.log('[MAILBOX AUTO-CREATED]', {
+            address: addr,
+            timestamp: new Date().toISOString()
+          });
+        } catch (createError) {
+          console.error('Error creating mailbox on the fly:', createError);
+          return res.json({
+            address: addr,
+            createdAt: new Date().toISOString(),
+            expiresAt: null,
+            messageCount: 0,
+            messages: [],
+          });
         }
-      });
+      }
 
-      if(!mb) return res.status(404).json({error: 'not found'});
+      let messagesWithPreview: Array<{
+        id: string;
+        from: string;
+        subject: string;
+        preview: string;
+        createdAt: string;
+      }> = [];
+      try {
+        messagesWithPreview = await Promise.all(
+          (mb.messages || []).map(async (msg) => {
+            let preview = '';
+            try {
+              const { simpleParser } = await import('mailparser');
+              const parsed = await simpleParser(Buffer.from(msg.raw));
+              const textContent = parsed.text || (parsed.html ? parsed.html.replace(/<[^>]*>/g, '') : '') || '';
+              preview = textContent.substring(0, 150).trim();
+              if (textContent.length > 150) preview += '...';
+            } catch (e) {
+              preview = 'Unable to load preview';
+            }
 
-      const messagesWithPreview = await Promise.all(
-        mb.messages.map(async (msg) => {
-          let preview = '';
-          try {
-            const { simpleParser } = await import('mailparser');
-            const parsed = await simpleParser(Buffer.from(msg.raw));
-            const textContent = parsed.text || (parsed.html ? parsed.html.replace(/<[^>]*>/g, '') : '') || '';
-            preview = textContent.substring(0, 150).trim();
-            if (textContent.length > 150) preview += '...';
-          } catch (e) {
-            preview = 'Unable to load preview';
-          }
-
-          return {
-            id: msg.id,
-            from: msg.from,
-            subject: msg.subject || '(No Subject)',
-            preview,
-            createdAt: msg.createdAt.toISOString(),
-          };
-        })
-      );
+            return {
+              id: msg.id,
+              from: msg.from,
+              subject: msg.subject || '(No Subject)',
+              preview,
+              createdAt: msg.createdAt.toISOString(),
+            };
+          })
+        );
+      } catch (parseError) {
+        console.error('Error parsing messages:', parseError);
+        messagesWithPreview = [];
+      }
 
       console.log('[MESSAGES ACCESSED]', {
         address: addr,

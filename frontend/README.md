@@ -4,15 +4,6 @@ The frontend component of the Temp-Mail service, providing a modern and responsi
 
 ![Temp-Mail Screenshot](./public/temp-mail-image.png)
 
-## Features
-
-- ✨ Clean, modern UI built with Next.js 15
-- 🌓 Dark mode support with theme toggle
-- 📱 Fully responsive design for all devices
-- 🔄 Smart polling with exponential backoff
-- ⚡ Fast performance with optimized components
-- 📨 Real-time email viewing and management
-- 🎨 Beautiful UI components with Tailwind CSS
 
 ## Directory Structure
 
@@ -101,14 +92,45 @@ The frontend communicates with the backend API using the functions in `lib/api.t
 - `fetchMessages`: Gets messages for a mailbox
 - `fetchMessage`: Gets a specific message
 
-## Smart Polling
+## Smart Polling and Error Handling
 
-The application implements smart polling to reduce unnecessary API calls:
+The application implements smart polling and error handling:
 
-1. Initial polling every 10 seconds
-2. Exponential backoff on errors (2^n * 2000ms, max 60s)
-3. Reduced polling frequency (30s) when email count stabilizes
-4. Auto-pause on rate limit with resume after 2 minutes
+1. **Adaptive Polling**:
+   - Initial polling every 10 seconds
+   - Exponential backoff on errors (2^n * 2000ms, max 60s)
+   - Reduced polling frequency (30s) when email count stabilizes
+
+2. **Error Resilience**:
+   - Automatic retry mechanism for transient errors
+   - Cache-busting parameters to prevent stale responses
+   - Graceful degradation on server errors
+   - Clear error messaging with retry options
+
+3. **Connection Management**:
+   - Automatic reconnection after network issues
+   - Backoff strategy for 429 (Too Many Requests) errors
+   - Visual feedback during connection attempts
+
+## Responsive Design
+
+The application is fully responsive with specific optimizations:
+
+1. **Mobile View**:
+   - Full-width buttons for better touch targets
+   - Stacked button layout for small screens
+   - Centered loading indicators
+   - Full page scrolling for long emails
+   - Optimized padding and spacing
+
+2. **Tablet View**:
+   - Responsive transitions between mobile and desktop layouts
+   - Optimized content display for medium screens
+
+3. **Desktop View**:
+   - Two-column email layout for efficient space usage
+   - Horizontal button layout
+   - Enhanced visual elements
 
 ## Environment Variables
 

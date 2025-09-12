@@ -4,7 +4,6 @@ A temporary email service with a modern UI that allows users to create disposabl
 
 ![Temp-Mail Screenshot](./frontend/public/temp-mail-image.png)
 
-
 ## Project Structure
 
 The project consists of two main parts:
@@ -14,6 +13,7 @@ The project consists of two main parts:
 - Built with Next.js 15
 - Uses React with TypeScript
 - Styled with Tailwind CSS
+- Fully responsive design for mobile, tablet, and desktop
 - Located in the `/frontend` directory
 
 ### Backend
@@ -22,6 +22,7 @@ The project consists of two main parts:
 - TypeScript
 - SMTP server for receiving emails
 - PostgreSQL database with Prisma ORM
+- Robust error handling and recovery
 - Located in the `/backend` directory
 
 ## Getting Started
@@ -67,10 +68,6 @@ SMTP_DOMAIN=
 
 # Environment
 NODE_ENV=production
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=100
 ```
 
 4. Run database migrations:
@@ -134,11 +131,13 @@ The backend is built with Node.js and Express, providing both an API server and 
 - **API Server**: Handles HTTP requests for creating mailboxes and retrieving messages
 - **SMTP Server**: Receives incoming emails and stores them in the database
 - **Database**: PostgreSQL with Prisma ORM for data storage and retrieval
-- **Rate Limiting**: Prevents abuse by limiting request frequency
+- **Auto-Creation**: Automatically creates mailboxes when needed for resilience
 - **Cleanup Service**: Automatically removes expired emails after 24 hours
+- **Health Check**: Endpoint to verify backend server status
 
 ### API Endpoints
 
+- `GET /api/health` - Health check endpoint
 - `POST /api/mailboxes/custom` - Create a custom mailbox
 - `POST /api/mailboxes/:address/messages` - Get messages for a mailbox
 - `GET /api/messages/:id` - Get a specific message
@@ -158,7 +157,7 @@ The frontend is built with Next.js 15 and React, providing a responsive and mode
 
 - **Home Page**: Allows users to create custom email addresses
 - **Mailbox Page**: Displays received emails with auto-refresh functionality
-- **Message Detail Page**: Shows the full content of an email
+- **Message Detail Page**: Shows the full content of an email with HTML support
 
 ### Technologies Used
 
@@ -172,7 +171,15 @@ The frontend is built with Next.js 15 and React, providing a responsive and mode
 
 - React hooks for local state management
 - Smart polling with exponential backoff for API requests
-- Optimized refresh logic to reduce API calls
+- Cache-busting for fresh data
+- Error resilience with graceful degradation
+
+### Responsive Design
+
+- Mobile-first approach with adaptive layouts
+- Optimized viewing experience on all device sizes
+- Touch-friendly interface elements
+- Responsive typography and spacing
 
 ## Development
 
@@ -217,3 +224,23 @@ The frontend can be deployed to Vercel or any static hosting service:
 1. Set up the environment variables as described above
 2. Build the project: `pnpm build`
 3. Deploy the `.next` folder
+
+## Recent Improvements
+
+### Backend Enhancements
+
+- Removed rate limiting for improved user experience
+- Added robust error handling and auto-recovery mechanisms
+- Implemented automatic mailbox creation for resilience
+- Enhanced database connection error handling
+- Improved logging for better debugging and monitoring
+
+### Frontend Enhancements
+
+- Implemented fully responsive design for all screen sizes
+- Enhanced error handling with graceful degradation
+- Added cache-busting for reliable data fetching
+- Improved UI with consistent button sizing and styling
+- Optimized email content display for mobile devices
+- Fixed scrolling issues for long email content
+- Enhanced visual feedback during loading states

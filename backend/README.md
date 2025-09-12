@@ -2,15 +2,6 @@
 
 The backend component of the Temp-Mail service, providing both an API server and an SMTP server for handling temporary email addresses.
 
-## Features
-
-- 🚀 Express.js API server for handling HTTP requests
-- 📧 SMTP server for receiving real emails
-- 🗄️ PostgreSQL database with Prisma ORM
-- 🔄 Automatic cleanup of expired emails
-- 🔒 Rate limiting to prevent abuse
-- 🔍 Email parsing and preview generation
-
 ## Directory Structure
 
 ```
@@ -70,10 +61,6 @@ SMTP_DOMAIN=
 
 # Environment
 NODE_ENV=production
-
-# Rate Limiting
-RATE_LIMIT_WINDOW_MS=900000
-RATE_LIMIT_MAX=100
 ```
 
 4. Generate Prisma client:
@@ -121,6 +108,33 @@ pnpm start
 - `GET /api/messages/:id` - Get a specific message
   - Response: `{ "id": "...", "subject": "...", "from": "...", "to": "...", "content": "...", "parsedData": { ... } }`
 
+### Health Check
+
+- `GET /api/health` - Check if the API is running
+  - Response: `{ "ok": true }`
+
+## Enhanced Error Handling
+
+The backend implements several error handling strategies:
+
+1. **Database Error Recovery**:
+   - Graceful handling of database connection issues
+   - Automatic retry mechanisms for transient errors
+   - Fallback responses when database operations fail
+
+2. **Auto-Creation of Resources**:
+   - Mailboxes are automatically created if they don't exist
+   - This prevents 404 errors when accessing new mailboxes
+
+3. **Error Logging and Monitoring**:
+   - Detailed error logging with context information
+   - Structured logging for easier debugging
+   - Tracking of error patterns and frequencies
+
+4. **Graceful Degradation**:
+   - Returns empty arrays instead of errors when possible
+   - Maintains service availability during partial outages
+
 ## Services
 
 ### Cleanup Service
@@ -142,8 +156,6 @@ Listens for incoming emails on the configured port and stores them in the databa
 | SMTP_PORT | Port for the SMTP server | 25 |
 | SMTP_DOMAIN | Domain for the SMTP server | - |
 | NODE_ENV | Environment (development/production) | production |
-| RATE_LIMIT_WINDOW_MS | Time window for rate limiting (ms) | 900000 |
-| RATE_LIMIT_MAX | Maximum requests per window | 100 |
 
 ## Scripts
 
