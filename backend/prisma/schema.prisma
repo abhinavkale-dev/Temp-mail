@@ -26,4 +26,7 @@ model Message {
   subject String?
   raw Bytes
   createdAt DateTime @default(now())
+  expiresAt DateTime?
+
+  @@index([expiresAt])
 } 

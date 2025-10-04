@@ -62,6 +62,7 @@ ${parsed.html || parsed.text || ''}`;
             from: parsed.from?.text || 'unknown',
             subject: parsed.subject || '(No Subject)',
             raw: rawBuffer,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
           }
         });
 
