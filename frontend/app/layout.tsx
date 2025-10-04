@@ -22,7 +22,7 @@ const featuresFont = {
 
 export const metadata: Metadata = {
   title: "Temp Mail",
-  description: "Temporary email service - Create disposable email addresses and receive emails without registration",
+   description: "Temporary email service - Create disposable email addresses and receive emails without registration",
   openGraph: {
     title: "Temp Mail - Temporary Email Service",
     description: "Create disposable email addresses and receive emails without registration. Your temporary email service for privacy.",
