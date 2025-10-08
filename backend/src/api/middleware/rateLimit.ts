@@ -1,4 +1,17 @@
 import rateLimit from 'express-rate-limit';
+import { Request } from 'express';
+
+const getClientIp = (req: Request): string => {
+  const forwardedFor = req.headers['x-forwarded-for'];
+  const realIp = req.headers['x-real-ip'] as string | undefined;
+  const cfIp = req.headers['cf-connecting-ip'] as string | undefined;
+  
+  if (typeof forwardedFor === 'string' && forwardedFor) {
+    return forwardedFor.split(',')[0].trim();
+  }
+  
+  return realIp || cfIp || req.ip || '';
+};
 
 export const createMailboxLimiter = rateLimit({
   windowMs: 5 * 60 * 1000,
@@ -8,9 +21,10 @@ export const createMailboxLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req),
   handler: (req, res) => {
     console.warn('[RATE LIMIT EXCEEDED]', {
-      ip: req.ip,
+      ip: getClientIp(req),
       endpoint: req.path,
       timestamp: new Date().toISOString()
     });
@@ -29,9 +43,10 @@ export const messageAccessLimiter = rateLimit({
   },
   standardHeaders: true,
   legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req),
   handler: (req, res) => {
     console.warn('[RATE LIMIT EXCEEDED]', {
-      ip: req.ip,
+      ip: getClientIp(req),
       endpoint: req.path,
       timestamp: new Date().toISOString()
     });
@@ -48,5 +63,16 @@ export const generalLimiter = rateLimit({
     error: 'Too many requests from this IP'
   },
   standardHeaders: true,
-  legacyHeaders: false
+  legacyHeaders: false,
+  keyGenerator: (req) => getClientIp(req),
+  handler: (req, res) => {
+    console.warn('[GENERAL RATE LIMIT EXCEEDED]', {
+      ip: getClientIp(req),
+      endpoint: req.path,
+      timestamp: new Date().toISOString()
+    });
+    res.status(429).json({
+      error: 'Too many requests from this IP, please try again later'
+    });
+  }
 });

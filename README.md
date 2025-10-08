@@ -134,6 +134,21 @@ The backend is built with Node.js and Express, providing both an API server and 
 - **Auto-Creation**: Automatically creates mailboxes when needed for resilience
 - **Cleanup Service**: Automatically removes expired emails after 24 hours
 - **Health Check**: Endpoint to verify backend server status
+- **Rate Limiting**: Intelligent rate limiting that works in production environments with proxies
+
+### Rate Limiting
+
+The backend implements different rate limits based on endpoint sensitivity:
+
+- **Mailbox Creation**: 5 requests per 5 minutes
+- **Message Access**: 30 requests per 1 minute
+- **General API Access**: 100 requests per 15 minutes
+
+Rate limiting is proxy-aware and correctly identifies client IPs using:
+- X-Forwarded-For header (common in AWS and other cloud providers)
+- CF-Connecting-IP header (used by Cloudflare)
+- X-Real-IP header (used by various proxies)
+- Direct IP as fallback
 
 ### API Endpoints
 
@@ -229,7 +244,8 @@ The frontend can be deployed to Vercel or any static hosting service:
 
 ### Backend Enhancements
 
-- Removed rate limiting for improved user experience
+- Re-implemented production-ready rate limiting that works with proxies and load balancers
+- Improved IP detection to handle X-Forwarded-For, CF-Connecting-IP, and X-Real-IP headers
 - Added robust error handling and auto-recovery mechanisms
 - Implemented automatic mailbox creation for resilience
 - Enhanced database connection error handling
