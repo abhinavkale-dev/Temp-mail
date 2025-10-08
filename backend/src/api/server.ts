@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import {prisma} from '../lib/prisma.js';
 import { makeCustomAddress, normalizeAddress, isOurDomain } from '../lib/email.js';
+import { createMailboxLimiter, messageAccessLimiter, generalLimiter } from './middleware/rateLimit.js';
 
 interface Server {
   listen(port: number, callback?: () => void): void;
@@ -36,11 +37,13 @@ export function createApiServer(): Server {
   
   app.use(cors(corsOptions));
 
+  app.use('/api', generalLimiter);
+
   const router = express.Router();
 
   router.get('/health', (req, res) => res.json({ok: true}));
 
-  router.post('/mailboxes/custom', async(req, res) => {
+  router.post('/mailboxes/custom', createMailboxLimiter, async(req, res) => {
     try {
       const { username } = req.body;
       
@@ -99,7 +102,7 @@ export function createApiServer(): Server {
     }
   });
 
-  router.post('/mailboxes', async (req, res) => {
+  router.post('/mailboxes', createMailboxLimiter, async (req, res) => {
     try {
       const { address } = req.body ?? {}; 
       if (!address)
@@ -117,7 +120,7 @@ export function createApiServer(): Server {
     }
   });
 
-  router.post('/mailboxes/:address/messages', async(req, res) => {
+  router.post('/mailboxes/:address/messages', messageAccessLimiter, async(req, res) => {
     try {
       const addr = normalizeAddress(req.params.address);
 
@@ -243,7 +246,7 @@ export function createApiServer(): Server {
     }
   })
 
-  router.get('/messages/:id', async(req, res)=> {
+  router.get('/messages/:id', messageAccessLimiter, async(req, res)=> {
     try {
       const msg = await prisma.message.findUnique({
         where: {id: req.params.id},

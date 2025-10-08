@@ -16,6 +16,7 @@
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "express": "^4.19.0",
+    "express-rate-limit": "^8.1.0",
     "jsonwebtoken": "^9.0.2",
     "mailparser": "^3.7.4",
     "nanoid": "^5.1.5",

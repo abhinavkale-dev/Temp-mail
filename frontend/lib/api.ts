@@ -1,6 +1,7 @@
 const API_BASE = process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001';
 
 import type { Message, MessageDetail } from './types';
+import { toast } from 'sonner';
 
 const requestCache = new Map<string, { data: any; timestamp: number; promise?: Promise<any> }>();
 const pendingRequests = new Map<string, Promise<any>>();
@@ -73,19 +74,17 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        
+
         if (response.status === 429) {
           console.log('Rate limit hit on mailbox creation');
-          
-          const fallbackData = {
-            address: `${username}@temp.abhi.at`,
-            createdAt: new Date().toISOString(),
-            expiresAt: null
-          };
-          setCachedData(cacheKey, fallbackData);
-          return fallbackData;
+          toast.error('Rate limit exceeded', {
+            description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+            duration: 5000,
+          });
+
+          throw new Error('Rate limit exceeded');
         }
-        
+
         throw new Error(`Failed to create custom mailbox: ${response.status} ${errorData.error || response.statusText}`);
       }
       
@@ -139,14 +138,18 @@ export async function fetchMessages(address: string, forceRefresh = false): Prom
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        
+
         if (response.status === 429) {
           console.log('Rate limit hit on message fetch');
-          
+          toast.error('Rate limit exceeded', {
+            description: errorData.error || 'Too many requests. Please slow down.',
+            duration: 5000,
+          });
+
           const fallbackData = { messages: [] };
           return fallbackData;
         }
-        
+
         throw new Error(`Failed to fetch messages: ${response.status} ${errorData.error || response.statusText}`);
       }
       
@@ -179,10 +182,14 @@ export async function fetchMessage(messageId: string): Promise<MessageDetail> {
       
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        
+
         if (response.status === 429) {
           console.log('Rate limit hit on individual message fetch');
-          
+          toast.error('Rate limit exceeded', {
+            description: errorData.error || 'Too many requests. Please wait a moment.',
+            duration: 5000,
+          });
+
           await new Promise(resolve => setTimeout(resolve, 2000));
           const retryResponse = await fetch(`${API_BASE}/api/messages/${messageId}`, {
             method: 'GET',
@@ -190,14 +197,14 @@ export async function fetchMessage(messageId: string): Promise<MessageDetail> {
               'Content-Type': 'application/json',
             }
           });
-          
+
           if (retryResponse.ok) {
             const result = await retryResponse.json();
             setCachedData(cacheKey, result);
             return result;
           }
         }
-        
+
         throw new Error(`Failed to fetch message: ${response.status} ${errorData.error || response.statusText}`);
       }
       

@@ -2,6 +2,7 @@
 import { Screen } from "@/components/screen"
 import { Header, Footer, BorderDecoration } from "@/components/layout"
 import { useState } from "react"
+import { toast } from "sonner"
 
 export default function HomePage() {
   const [email, setEmail] = useState("")
@@ -47,9 +48,21 @@ export default function HomePage() {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ username: username.trim() })
-                          }).finally(() => {
-                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
                           })
+                          .then(async (res) => {
+                            if (res.status === 429) {
+                              const errorData = await res.json().catch(() => ({}));
+                              toast.error('Rate limit exceeded', {
+                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                duration: 5000,
+                              });
+                              return;
+                            }
+                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`;
+                          })
+                          .catch((err) => {
+                            console.error('Error creating mailbox:', err);
+                          });
                         }
                       }}
                       className="emailbox-input w-full px-6 py-4 pr-20 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none text-lg font-bold"
@@ -64,9 +77,21 @@ export default function HomePage() {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ username: username.trim() })
-                          }).finally(() => {
-                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
                           })
+                          .then(async (res) => {
+                            if (res.status === 429) {
+                              const errorData = await res.json().catch(() => ({}));
+                              toast.error('Rate limit exceeded', {
+                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                duration: 5000,
+                              });
+                              return;
+                            }
+                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`;
+                          })
+                          .catch((err) => {
+                            console.error('Error creating mailbox:', err);
+                          });
                         }
                       }}
                     >
@@ -144,9 +169,21 @@ export default function HomePage() {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ username: username.trim() })
-                          }).finally(() => {
-                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
                           })
+                          .then(async (res) => {
+                            if (res.status === 429) {
+                              const errorData = await res.json().catch(() => ({}));
+                              toast.error('Rate limit exceeded', {
+                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                duration: 5000,
+                              });
+                              return;
+                            }
+                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`;
+                          })
+                          .catch((err) => {
+                            console.error('Error creating mailbox:', err);
+                          });
                           }
                         }}
                         className="emailbox-input w-full px-6 py-4 pr-20 rounded-full border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white focus:outline-none text-lg font-bold"
@@ -161,9 +198,21 @@ export default function HomePage() {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ username: username.trim() })
-                          }).finally(() => {
-                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`
                           })
+                          .then(async (res) => {
+                            if (res.status === 429) {
+                              const errorData = await res.json().catch(() => ({}));
+                              toast.error('Rate limit exceeded', {
+                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                duration: 5000,
+                              });
+                              return;
+                            }
+                            window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`;
+                          })
+                          .catch((err) => {
+                            console.error('Error creating mailbox:', err);
+                          });
                           }
                         }}
                       >

@@ -21,8 +21,9 @@ const featuresFont = {
 }
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://temp.abhi.at'),
   title: "Temp Mail",
-   description: "Temporary email service - Create disposable email addresses and receive emails without registration",
+  description: "Temporary email service - Create disposable email addresses and receive emails without registration",
   openGraph: {
     title: "Temp Mail - Temporary Email Service",
     description: "Create disposable email addresses and receive emails without registration. Your temporary email service for privacy.",
