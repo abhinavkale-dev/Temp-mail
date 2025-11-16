@@ -3,14 +3,14 @@ import { useTheme } from "next-themes"
 import { useEffect, useState } from "react"
 
 export function Footer() {
-  const { theme } = useTheme()
+  const { resolvedTheme } = useTheme()
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
   }, [])
 
-  const isDark = mounted ? theme === 'dark' : false
+  const isDark = resolvedTheme === 'dark'
   return (
     <footer
       className="border-t border-dashed dark:border-gray-700 px-4 py-4 bg-white dark:bg-[#0D0E0E] text-black dark:text-white text-center"

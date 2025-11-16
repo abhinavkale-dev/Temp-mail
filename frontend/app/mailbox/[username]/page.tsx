@@ -3,7 +3,7 @@
 import { useParams } from "next/navigation"
 import { useState, useEffect, useCallback, useRef } from "react"
 import { Button } from "@/components/ui/button"
-import { RefreshCw as Refresh, Lock } from "lucide-react"
+import { RefreshCw as Refresh, Lock, ArrowRightLeft } from "lucide-react"
 import Link from "next/link"
 import { toast } from "sonner"
 import { Screen } from "@/components/screen"
@@ -181,29 +181,39 @@ export default function MailboxPage() {
   );
   
   const ActionButtons = () => (
-    <div className="flex flex-col sm:flex-row justify-center gap-2 sm:gap-3 px-2 sm:px-0">
-      <Button
-        className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base w-full sm:w-auto sm:min-w-[120px]"
-        onClick={() => {
-          const email = `${username}@temp.abhi.at`;
-          navigator.clipboard.writeText(email);
-          toast.success("Email copied to clipboard!");
-        }}
-      >
-        <svg width="14" height="14" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
-          <path fillRule="evenodd" clipRule="evenodd" d="M24.7397 9.91727V19.9465C24.7397 21.0543 23.8416 21.9524 22.7338 21.9524C22.1799 21.9524 21.7309 21.5033 21.7309 20.9494V14.27C21.7315 13.9643 21.6085 13.6713 21.3899 13.4576L17.8997 10.0075C17.2774 9.37513 16.4301 9.01459 15.5429 9.00461H11.7017C11.1478 9.00461 10.6987 8.55559 10.6987 8.00169V6.87841C10.6987 6.11327 11.0034 5.37962 11.5454 4.83953C12.0873 4.29943 12.822 3.99735 13.5872 4.00002H18.9127C19.6658 4.00761 20.3859 4.31006 20.9186 4.84247L23.9273 7.85125C24.4625 8.40421 24.7549 9.14788 24.7397 9.91727ZM19.8855 13.929L16.8768 10.9202C16.3453 10.386 15.6244 10.0832 14.8709 10.0777H9.54539C7.95407 10.0833 6.66698 11.3748 6.66699 12.9662V25.1116C6.66699 26.7068 7.96018 28 9.55541 28H17.8697C19.4531 27.9835 20.7281 26.6951 20.728 25.1116V15.9348C20.7358 15.1776 20.4479 14.4472 19.9257 13.8989L19.8855 13.929Z" fill="#ffffff"></path>
-        </svg>
-        Copy
-      </Button>
-      <Link href="/" className="w-full sm:w-auto">
-        <Button className="bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base w-full sm:w-auto sm:min-w-[120px]">
-          Change
+    <div className="flex flex-col gap-2 px-2 sm:px-0">
+      <div className="flex flex-row justify-center gap-2 sm:gap-3">
+        <Button
+          className="bg-green-600 hover:bg-green-700 text-white text-sm sm:text-base flex-1 sm:flex-initial sm:min-w-[120px]"
+          onClick={() => {
+            const email = `${username}@temp.abhi.at`;
+            navigator.clipboard.writeText(email);
+            toast.success("Email copied to clipboard!");
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-2">
+            <path fillRule="evenodd" clipRule="evenodd" d="M24.7397 9.91727V19.9465C24.7397 21.0543 23.8416 21.9524 22.7338 21.9524C22.1799 21.9524 21.7309 21.5033 21.7309 20.9494V14.27C21.7315 13.9643 21.6085 13.6713 21.3899 13.4576L17.8997 10.0075C17.2774 9.37513 16.4301 9.01459 15.5429 9.00461H11.7017C11.1478 9.00461 10.6987 8.55559 10.6987 8.00169V6.87841C10.6987 6.11327 11.0034 5.37962 11.5454 4.83953C12.0873 4.29943 12.822 3.99735 13.5872 4.00002H18.9127C19.6658 4.00761 20.3859 4.31006 20.9186 4.84247L23.9273 7.85125C24.4625 8.40421 24.7549 9.14788 24.7397 9.91727ZM19.8855 13.929L16.8768 10.9202C16.3453 10.386 15.6244 10.0832 14.8709 10.0777H9.54539C7.95407 10.0833 6.66698 11.3748 6.66699 12.9662V25.1116C6.66699 26.7068 7.96018 28 9.55541 28H17.8697C19.4531 27.9835 20.7281 26.6951 20.728 25.1116V15.9348C20.7358 15.1776 20.4479 14.4472 19.9257 13.8989L19.8855 13.929Z" fill="#ffffff"></path>
+          </svg>
+          Copy
         </Button>
-      </Link>
-      <Button variant="outline" onClick={manualRefresh} className="text-sm sm:text-base w-full sm:w-auto sm:min-w-[120px]">
-        <Refresh className="w-4 h-4 mr-2" />
-        Manual Refresh
-      </Button>
+        <Link href="/" className="flex-1 sm:flex-initial">
+          <Button className="bg-red-600 hover:bg-red-700 text-white text-sm sm:text-base w-full sm:min-w-[140px]">
+            <ArrowRightLeft className="w-4 h-4 mr-2" />
+            Change Email
+          </Button>
+        </Link>
+        <Button variant="outline" onClick={manualRefresh} className="hidden sm:flex text-sm sm:text-base sm:min-w-[140px]">
+          <Refresh className="w-4 h-4 mr-2" />
+          Manual Refresh
+        </Button>
+      </div>
+
+      <div className="flex justify-center sm:hidden">
+        <Button variant="outline" onClick={manualRefresh} className="text-sm w-full max-w-[300px]">
+          <Refresh className="w-4 h-4 mr-2" />
+          Manual Refresh
+        </Button>
+      </div>
     </div>
   );
   

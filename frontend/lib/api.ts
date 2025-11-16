@@ -126,14 +126,13 @@ export async function fetchMessages(address: string, forceRefresh = false): Prom
         }
       }
       
-      // Add cache-busting parameter to avoid 429 errors from browser caching
       const cacheBuster = forceRefresh ? `?_=${Date.now()}` : '';
       const response = await fetch(`${API_BASE}/api/mailboxes/${encodeURIComponent(address)}/messages${cacheBuster}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        cache: 'no-store' // Ensure we don't use browser cache
+        cache: 'no-store'
       });
       
       if (!response.ok) {
