@@ -1,7 +1,7 @@
 "use client"
 
 import { useParams } from "next/navigation"
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import { Button } from "@/components/ui/button"
 import { ArrowLeft } from "lucide-react"
 import { useRouter } from "next/navigation"
@@ -10,6 +10,7 @@ import { toast } from "sonner"
 import { Screen } from "@/components/screen"
 import { Header, Footer, BorderDecoration } from "@/components/layout"
 import { fetchMessage } from "@/lib/api"
+import { sanitizeEmailHtml } from "@/lib/sanitize-html"
 
 export default function MessagePage() {
   const params = useParams()
@@ -20,6 +21,16 @@ export default function MessagePage() {
   const [message, setMessage] = useState<any>(null)
   const [loading, setLoading] = useState(true)
 
+  const sanitizedHtml = useMemo(() => {
+    if (!message?.parsedData?.html) {
+      return message?.parsedData?.text
+        ? `<p>${message.parsedData.text}</p>`
+        : message?.preview
+        ? `<p>${message.preview}</p>`
+        : '<p>No content available</p>';
+    }
+    return sanitizeEmailHtml(message.parsedData.html);
+  }, [message]);
 
   useEffect(() => {
     const loadMessage = async () => {
@@ -156,10 +167,7 @@ export default function MessagePage() {
                 <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 overflow-auto max-h-[60vh]">
                   <div className="text-sm text-gray-600 dark:text-gray-400 prose max-w-none dark:prose-invert"
                        style={{ maxWidth: '100%', wordBreak: 'break-word' }}
-                       dangerouslySetInnerHTML={{ 
-                         __html: message.parsedData?.html || 
-                                `<p>${message.parsedData?.text || message.preview || "No content available"}</p>` 
-                       }}
+                       dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                   />
                 </div>
               </div>
@@ -212,10 +220,7 @@ export default function MessagePage() {
                   <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-900 rounded-md border border-gray-200 dark:border-gray-700 overflow-x-auto">
                     <div className="text-sm text-gray-600 dark:text-gray-400 prose max-w-none dark:prose-invert"
                          style={{ maxWidth: '100%', wordBreak: 'break-word' }}
-                         dangerouslySetInnerHTML={{ 
-                           __html: message.parsedData?.html || 
-                                  `<p>${message.parsedData?.text || message.preview || "No content available"}</p>` 
-                         }}
+                         dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                     />
                   </div>
                 </div>

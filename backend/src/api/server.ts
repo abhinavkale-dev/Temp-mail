@@ -256,7 +256,7 @@ export function createApiServer(): Server {
       });
 
       if(!msg) return res.status(404).json({error: 'not found'});
-      
+
       console.log('[MESSAGE ACCESSED]', {
         id: msg.id,
         mailbox: msg.mailbox.address
@@ -274,6 +274,25 @@ export function createApiServer(): Server {
         htmlPreview: parsed.html ? parsed.html.substring(0, 200) + '...' : 'No HTML'
       });
 
+      let processedHtml = parsed.html || '';
+      if (processedHtml && parsed.attachments) {
+        const cidMap = new Map<string, number>();
+        parsed.attachments.forEach((att, idx) => {
+          if (att.contentId) {
+            const cleanCid = att.contentId.replace(/^<|>$/g, '');
+            cidMap.set(cleanCid, idx);
+          }
+        });
+
+        processedHtml = processedHtml.replace(/cid:([^"'\s)]+)/gi, (match, cid) => {
+          const idx = cidMap.get(cid);
+          if (idx !== undefined) {
+            return `/api/messages/${msg.id}/attachments/${idx}`;
+          }
+          return match;
+        });
+      }
+
       res.json({
         id: msg.id,
         from: msg.from,
@@ -285,9 +304,15 @@ export function createApiServer(): Server {
           subject: parsed.subject || '',
           from: parsed.from?.text || '',
           text: parsed.text || '',
-          html: parsed.html || '',
+          html: processedHtml,
           textAsHtml: parsed.textAsHtml || '',
-          attachments: parsed.attachments || [],
+          attachments: parsed.attachments?.map((att, idx) => ({
+            filename: att.filename || `attachment-${idx}`,
+            contentType: att.contentType,
+            size: att.size,
+            contentId: att.contentId,
+            index: idx,
+          })) || [],
           date: (parsed.date || new Date(msg.createdAt)).toISOString(),
         }
       });
@@ -296,6 +321,43 @@ export function createApiServer(): Server {
       res.status(500).json({error: 'Failed to fetch message'});
     }
   })
+
+  router.get('/messages/:id/attachments/:index', messageAccessLimiter, async(req, res) => {
+    try {
+      const msg = await prisma.message.findUnique({
+        where: {id: req.params.id},
+      });
+
+      if(!msg) return res.status(404).json({error: 'Message not found'});
+
+      const { simpleParser } = await import('mailparser');
+      const parsed = await simpleParser(Buffer.from(msg.raw));
+
+      const index = parseInt(req.params.index, 10);
+      if (isNaN(index) || !parsed.attachments || index < 0 || index >= parsed.attachments.length) {
+        return res.status(404).json({error: 'Attachment not found'});
+      }
+
+      const attachment = parsed.attachments[index];
+
+      if (attachment.contentType) {
+        res.setHeader('Content-Type', attachment.contentType);
+      }
+
+      if (attachment.filename && !attachment.contentId) {
+        res.setHeader('Content-Disposition', `attachment; filename="${attachment.filename}"`);
+      }
+
+      if (attachment.contentId) {
+        res.setHeader('Cache-Control', 'public, max-age=3600');
+      }
+
+      res.send(attachment.content);
+    } catch (error) {
+      console.error('Error serving attachment', error);
+      res.status(500).json({error: 'Failed to serve attachment'});
+    }
+  });
 
   app.use('/api', router);
 

@@ -1,4 +1,6 @@
+import { useMemo } from 'react';
 import { MessageDetail } from '../lib/types';
+import { sanitizeEmailHtml } from '../lib/sanitize-html';
 
 interface MessageViewProps {
   message: MessageDetail;
@@ -6,6 +8,10 @@ interface MessageViewProps {
 }
 
 export function MessageView({ message, onBack }: MessageViewProps) {
+  const sanitizedHtml = useMemo(() => {
+    if (!message.parsedData?.html) return null;
+    return sanitizeEmailHtml(message.parsedData.html);
+  }, [message.parsedData?.html]);
   return (
     <>
       <div className="flex items-center justify-between mb-6">
@@ -65,9 +71,9 @@ export function MessageView({ message, onBack }: MessageViewProps) {
         
         <div className="p-6">
           <div className="prose prose-invert max-w-none">
-            {message.parsedData?.html ? (
-              <div 
-                dangerouslySetInnerHTML={{ __html: message.parsedData.html }}
+            {sanitizedHtml ? (
+              <div
+                dangerouslySetInnerHTML={{ __html: sanitizedHtml }}
                 className="text-[#e8feff]/90 leading-relaxed [&_a]:text-[#00FAFF] [&_a]:underline hover:[&_a]:text-[#6EFFFF]"
               />
             ) : (

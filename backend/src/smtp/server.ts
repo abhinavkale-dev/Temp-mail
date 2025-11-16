@@ -36,7 +36,13 @@ export function startSmtp(): void {
     },
     async onData(stream, session, cb) {
       try {
-        const parsed = await simpleParser(stream);
+        const chunks: Buffer[] = [];
+        for await (const chunk of stream) {
+          chunks.push(Buffer.from(chunk));
+        }
+        const rawBuffer = Buffer.concat(chunks);
+
+        const parsed = await simpleParser(rawBuffer);
 
         const rcptAddr = normalizeAddress(session.envelope.rcptTo[0].address);
 
@@ -45,16 +51,6 @@ export function startSmtp(): void {
           from: parsed.from?.text,
           subject: parsed.subject,
         });
-
-      const reconstructedEmail = `From: ${parsed.from?.text || 'unknown'}
-To: ${rcptAddr}
-Subject: ${parsed.subject || '(No Subject)'}
-Date: ${parsed.date?.toUTCString() || new Date().toUTCString()}
-Content-Type: text/html; charset=utf-8
-
-${parsed.html || parsed.text || ''}`;
-
-        const rawBuffer = Buffer.from(reconstructedEmail, 'utf-8');
 
         await prisma.message.create({
           data: {
