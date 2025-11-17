@@ -72,6 +72,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.0.3",
     "postcss": "^8.5",
+    "sharp": "^0.34.5",
     "tailwindcss": "^4.1.9",
     "tw-animate-css": "1.3.3",
     "typescript": "^5"

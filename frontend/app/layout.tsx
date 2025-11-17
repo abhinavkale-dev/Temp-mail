@@ -31,9 +31,9 @@ export const metadata: Metadata = {
     siteName: "Temp Mail",
     images: [
       {
-        url: "/Temp-mail-opengraph.png",
-        width: 1200,
-        height: 630,
+        url: "/Temp-mail-opengraph.webp",
+        width: 1184,
+        height: 864,
         alt: "Temp Mail - Temporary Email Service",
       },
     ],
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Temp Mail - Temporary Email Service",
     description: "Create disposable email addresses and receive emails without registration.",
-    images: ["/Temp-mail-opengraph.png"],
+    images: ["/Temp-mail-opengraph.webp"],
   },
 };
 
