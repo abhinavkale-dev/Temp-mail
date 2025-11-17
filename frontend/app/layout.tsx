@@ -27,7 +27,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "Temp Mail - Temporary Email Service",
     description: "Create disposable email addresses and receive emails without registration. Your temporary email service for privacy.",
-    url: "https://temp.abhi.at",
+    url: "https://temp-mail.abhi.at",
     siteName: "Temp Mail",
     images: [
       {
