@@ -21,7 +21,7 @@ const featuresFont = {
 }
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://temp.abhi.at'),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://temp-mail.abhi.at'),
   title: "Temp Mail",
   description: "Temporary email service - Create disposable email addresses and receive emails without registration",
   openGraph: {
@@ -31,7 +31,7 @@ export const metadata: Metadata = {
     siteName: "Temp Mail",
     images: [
       {
-        url: "/Temp-mail-opengraph.webp",
+        url: "/Temp-mail-opengraph.png",
         width: 1184,
         height: 864,
         alt: "Temp Mail - Temporary Email Service",
@@ -44,7 +44,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Temp Mail - Temporary Email Service",
     description: "Create disposable email addresses and receive emails without registration.",
-    images: ["/Temp-mail-opengraph.webp"],
+    images: ["/Temp-mail-opengraph.png"],
   },
 };
 
