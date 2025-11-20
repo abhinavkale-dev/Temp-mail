@@ -10,7 +10,7 @@ interface SMTPError extends Error {
 export function startSmtp(): void {
   const server = new SMTPServer({
     disabledCommands: ['AUTH'],
-    onRcptTo(address, session, cb) {
+    async onRcptTo(address, session, cb) {
       const rcpt = normalizeAddress(address.address);
       console.log('[RCPT TO]', {raw: address.address, normalized: rcpt});
       if(!isOurDomain(rcpt)) {
@@ -20,19 +20,18 @@ export function startSmtp(): void {
         return cb(err);
       }
 
-      prisma.mailbox.upsert({
-        where: { address: rcpt },
-        update: {},
-        create: { address: rcpt, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }
-      })
-      .then(() => {
+      try {
+        await prisma.mailbox.upsert({
+          where: { address: rcpt },
+          update: {},
+          create: { address: rcpt, expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) }
+        });
         console.log('[RCPT ACCEPTED]', rcpt);
         cb();
-      })
-      .catch((err) => {
+      } catch (err) {
         console.error('[RCPT ERROR]', err);
         cb(err as Error);
-      })
+      }
     },
     async onData(stream, session, cb) {
       try {
