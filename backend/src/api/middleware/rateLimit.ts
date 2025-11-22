@@ -14,10 +14,10 @@ const getClientIp = (req: Request): string => {
 };
 
 export const createMailboxLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 5,
+  windowMs: 60 * 60 * 1000, 
+  max: 10, 
   message: {
-    error: 'Too many mailboxes created, please try again after 15 minutes'
+    error: 'Too many mailboxes created, please try again after 1 hour'
   },
   standardHeaders: true,
   legacyHeaders: false,
@@ -29,7 +29,7 @@ export const createMailboxLimiter = rateLimit({
       timestamp: new Date().toISOString()
     });
     res.status(429).json({
-      error: 'Too many mailboxes created, please try again after 15 minutes'
+      error: 'Too many mailboxes created, please try again after 1 hour'
     });
   }
 });
@@ -37,7 +37,7 @@ export const createMailboxLimiter = rateLimit({
 
 export const messageAccessLimiter = rateLimit({
   windowMs: 1 * 60 * 1000,
-  max: 30,
+  max: 100, 
   message: {
     error: 'Too many requests, please slow down'
   },
@@ -57,8 +57,8 @@ export const messageAccessLimiter = rateLimit({
 });
 
 export const generalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
+  windowMs: 1 * 60 * 1000, 
+  max: 200, 
   message: {
     error: 'Too many requests from this IP'
   },

@@ -1,6 +1,7 @@
 import type { Metadata } from "next"
 import { Inter } from "next/font/google"
 import { ThemeProvider } from "@/components/theme-provider"
+import { PostHogProvider } from "@/components/PostHogProvider"
 import { Toaster } from "@/components/ui/sonner"
 import "./globals.css"
 
@@ -65,7 +66,9 @@ export default function RootLayout({
           enableSystem
           disableTransitionOnChange
         >
-          {children}
+          <PostHogProvider>
+            {children}
+          </PostHogProvider>
         </ThemeProvider>
         <Toaster />
       </body>
