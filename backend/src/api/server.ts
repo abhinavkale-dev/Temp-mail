@@ -72,6 +72,7 @@ export function createApiServer(): Server {
           expiresAt: expiresAt.toISOString(),
           timestamp: new Date().toISOString()
         });
+
       } else {
         
         if (!mailbox.expiresAt) {
@@ -90,6 +91,7 @@ export function createApiServer(): Server {
           address: address,
           timestamp: new Date().toISOString()
         });
+
       }
       res.json({
         address: mailbox.address,

@@ -2,6 +2,7 @@ import { SMTPServer } from "smtp-server";
 import { simpleParser } from "mailparser";
 import { prisma } from "../lib/prisma.js";
 import { normalizeAddress, isOurDomain, extractDomain } from "../lib/email.js";
+import { trackServerEvent, shouldSample } from "../lib/posthog.js";
 
 interface SMTPError extends Error {
   responseCode?: number;
@@ -34,6 +35,9 @@ export function startSmtp(): void {
       }
     },
     async onData(stream, session, cb) {
+      let rcptAddr = '';
+      let parsed: any = null;
+
       try {
         const chunks: Buffer[] = [];
         for await (const chunk of stream) {
@@ -41,9 +45,9 @@ export function startSmtp(): void {
         }
         const rawBuffer = Buffer.concat(chunks);
 
-        const parsed = await simpleParser(rawBuffer);
+        parsed = await simpleParser(rawBuffer);
 
-        const rcptAddr = normalizeAddress(session.envelope.rcptTo[0].address);
+        rcptAddr = normalizeAddress(session.envelope.rcptTo[0].address);
 
         console.log('[MESSAGE]', {
           to: rcptAddr,
@@ -62,9 +66,30 @@ export function startSmtp(): void {
         });
 
         console.log('[MESSAGE STORED]', rcptAddr);
+
+        if (shouldSample(50)) {
+          trackServerEvent('smtp_email_received', {
+            to: rcptAddr,
+            from: parsed.from?.text,
+            subject: parsed.subject,
+            has_html: !!parsed.html,
+            has_text: !!parsed.text,
+            raw_size: rawBuffer.length
+          });
+        }
         cb();
       } catch (e) {
         console.error('[MESSAGE ERROR]', e);
+
+        const error = e as Error;
+        trackServerEvent('smtp_email_failed', {
+          to: rcptAddr,
+          from: parsed?.from?.text,
+          subject: parsed?.subject,
+          error: error.message,
+          error_type: error.constructor.name
+        });
+
         const err = e as SMTPError;
         cb(err);
       }

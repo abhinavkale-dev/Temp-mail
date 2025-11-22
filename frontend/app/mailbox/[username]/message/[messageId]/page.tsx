@@ -11,6 +11,7 @@ import { Screen } from "@/components/screen"
 import { Header, Footer, BorderDecoration } from "@/components/layout"
 import { fetchMessage } from "@/lib/api"
 import { sanitizeEmailHtml } from "@/lib/sanitize-html"
+import { trackEvent } from "@/lib/posthog"
 
 export default function MessagePage() {
   const params = useParams()
@@ -38,9 +39,25 @@ export default function MessagePage() {
       try {
         const messageData = await fetchMessage(messageId)
         setMessage(messageData)
+
+        trackEvent('message_opened', {
+          username: username,
+          message_id: messageId,
+          subject: messageData.subject,
+          from: messageData.from,
+          has_html: !!messageData.parsedData?.html,
+          has_text: !!messageData.parsedData?.text
+        })
       } catch (error) {
+        const err = error as Error;
+        trackEvent('message_open_failed', {
+          username: username,
+          message_id: messageId,
+          error: err.message
+        })
+
         console.error('Failed to load message from API:', error)
-        
+
         toast.error("Failed to load email message. Please try again later.", {
           duration: 5000,
         })

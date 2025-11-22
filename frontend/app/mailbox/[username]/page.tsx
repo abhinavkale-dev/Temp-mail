@@ -9,6 +9,7 @@ import { toast } from "sonner"
 import { Screen } from "@/components/screen"
 import { Header, Footer, BorderDecoration } from "@/components/layout"
 import { fetchMessages } from "@/lib/api"
+import { trackEvent } from "@/lib/posthog"
 
 export default function MailboxPage() {
   const params = useParams()
@@ -125,6 +126,11 @@ export default function MailboxPage() {
 
 
   const manualRefresh = async () => {
+    trackEvent('manual_refresh', {
+      username: username,
+      current_email_count: emails.length
+    });
+
     setApiErrorState(false);
     setFailedAttempts(0);
     setHasStableEmails(false);
@@ -140,11 +146,17 @@ export default function MailboxPage() {
     });
 
     setRefreshing(true);
-    
+
     try {
-      const result = await fetchMessages(`${username}@temp.abhi.at`, true); 
+      const result = await fetchMessages(`${username}@temp.abhi.at`, true);
       setEmails(result.messages || []);
-      
+
+      trackEvent('manual_refresh_success', {
+        username: username,
+        new_email_count: result.messages?.length || 0,
+        previous_email_count: emails.length
+      });
+
       toast.success("Mailbox refreshed!", {
         style: {
           background: 'white',
@@ -153,6 +165,12 @@ export default function MailboxPage() {
         },
       });
     } catch (error) {
+      const err = error as Error;
+      trackEvent('manual_refresh_failed', {
+        username: username,
+        error: err.message
+      });
+
       toast.error("Failed to refresh mailbox. Please try again later.", {
         style: {
           background: 'white',
@@ -173,6 +191,11 @@ export default function MailboxPage() {
       onClick={() => {
         const email = `${username}@temp.abhi.at`;
         navigator.clipboard.writeText(email);
+        trackEvent('email_copied', {
+          username: username,
+          method: 'email_display_click',
+          email_address: email
+        });
         toast.success("Email copied to clipboard!");
       }}
     >
@@ -188,6 +211,11 @@ export default function MailboxPage() {
           onClick={() => {
             const email = `${username}@temp.abhi.at`;
             navigator.clipboard.writeText(email);
+            trackEvent('email_copied', {
+              username: username,
+              method: 'copy_button',
+              email_address: email
+            });
             toast.success("Email copied to clipboard!");
           }}
         >

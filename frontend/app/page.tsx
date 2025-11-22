@@ -3,6 +3,7 @@ import { Screen } from "@/components/screen"
 import { Header, Footer, BorderDecoration } from "@/components/layout"
 import { useState } from "react"
 import { toast } from "sonner"
+import { trackEvent } from "@/lib/posthog"
 
 export default function HomePage() {
   const [email, setEmail] = useState("")
@@ -43,6 +44,10 @@ export default function HomePage() {
                       onChange={(e) => setUsername(validateUsername(e.target.value))}
                       onKeyPress={(e) => {
                         if (e.key === 'Enter' && username.trim()) {
+                          trackEvent('mailbox_creation_attempt', {
+                            username: username.trim(),
+                            method: 'enter_key'
+                          });
 
                           fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'}/api/mailboxes/custom`, {
                             method: 'POST',
@@ -51,6 +56,10 @@ export default function HomePage() {
                           })
                           .then(async (res) => {
                             if (res.status === 429) {
+                              trackEvent('rate_limit_hit', {
+                                endpoint: 'mailboxes/custom',
+                                method: 'enter_key'
+                              });
                               const errorData = await res.json().catch(() => ({}));
                               toast.error('Rate limit exceeded', {
                                 description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
@@ -58,9 +67,18 @@ export default function HomePage() {
                               });
                               return;
                             }
+                            trackEvent('mailbox_created', {
+                              username: username.trim(),
+                              method: 'enter_key'
+                            });
                             window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`;
                           })
                           .catch((err) => {
+                            trackEvent('mailbox_creation_failed', {
+                              username: username.trim(),
+                              method: 'enter_key',
+                              error: err.message
+                            });
                             console.error('Error creating mailbox:', err);
                           });
                         }
@@ -73,6 +91,11 @@ export default function HomePage() {
                       className="absolute right-2 top-1/2 transform -translate-y-1/2 w-10 h-10 bg-black text-white hover:bg-gray-800 rounded-full flex items-center justify-center transition-colors"
                       onClick={() => {
                         if (username.trim()) {
+                          trackEvent('mailbox_creation_attempt', {
+                            username: username.trim(),
+                            method: 'button_click'
+                          });
+
                           fetch(`${process.env.NEXT_PUBLIC_API_BASE || 'http://localhost:3001'}/api/mailboxes/custom`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
@@ -80,6 +103,10 @@ export default function HomePage() {
                           })
                           .then(async (res) => {
                             if (res.status === 429) {
+                              trackEvent('rate_limit_hit', {
+                                endpoint: 'mailboxes/custom',
+                                method: 'button_click'
+                              });
                               const errorData = await res.json().catch(() => ({}));
                               toast.error('Rate limit exceeded', {
                                 description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
@@ -87,9 +114,18 @@ export default function HomePage() {
                               });
                               return;
                             }
+                            trackEvent('mailbox_created', {
+                              username: username.trim(),
+                              method: 'button_click'
+                            });
                             window.location.href = `/mailbox/${encodeURIComponent(username.trim())}`;
                           })
                           .catch((err) => {
+                            trackEvent('mailbox_creation_failed', {
+                              username: username.trim(),
+                              method: 'button_click',
+                              error: err.message
+                            });
                             console.error('Error creating mailbox:', err);
                           });
                         }
