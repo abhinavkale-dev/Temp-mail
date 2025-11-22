@@ -78,7 +78,7 @@ export async function createCustomMailbox(username: string): Promise<{ address: 
         if (response.status === 429) {
           console.log('Rate limit hit on mailbox creation');
           toast.error('Rate limit exceeded', {
-            description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+            description: errorData.error || 'Too many mailboxes created. Please try again after 1 hour.',
             duration: 5000,
           });
 

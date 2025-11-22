@@ -62,7 +62,7 @@ export default function HomePage() {
                               });
                               const errorData = await res.json().catch(() => ({}));
                               toast.error('Rate limit exceeded', {
-                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                description: errorData.error || 'Too many mailboxes created. Please try again after 1 hour.',
                                 duration: 5000,
                               });
                               return;
@@ -109,7 +109,7 @@ export default function HomePage() {
                               });
                               const errorData = await res.json().catch(() => ({}));
                               toast.error('Rate limit exceeded', {
-                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                description: errorData.error || 'Too many mailboxes created. Please try again after 1 hour.',
                                 duration: 5000,
                               });
                               return;
@@ -210,7 +210,7 @@ export default function HomePage() {
                             if (res.status === 429) {
                               const errorData = await res.json().catch(() => ({}));
                               toast.error('Rate limit exceeded', {
-                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                description: errorData.error || 'Too many mailboxes created. Please try again after 1 hour.',
                                 duration: 5000,
                               });
                               return;
@@ -239,7 +239,7 @@ export default function HomePage() {
                             if (res.status === 429) {
                               const errorData = await res.json().catch(() => ({}));
                               toast.error('Rate limit exceeded', {
-                                description: errorData.error || 'Too many mailboxes created. Please try again in 15 minutes.',
+                                description: errorData.error || 'Too many mailboxes created. Please try again after 1 hour.',
                                 duration: 5000,
                               });
                               return;
