@@ -116,8 +116,8 @@ export default function MailboxPage() {
     };
 
     const interval = setInterval(() => {
-      if (isListening && !loading) { 
-        loadEmails()
+      if (isListening && !loading) {
+        loadEmails(true)
       }
     }, getBackoffTime())
 
