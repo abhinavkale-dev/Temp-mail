@@ -1,0 +1,23 @@
+# Temp Mail
+
+> Temp Mail is a free temporary (disposable) email service. Create a throwaway
+> inbox instantly, receive emails, and read them without registration. Built for
+> privacy — sign up for services, verify accounts, and avoid spam without giving
+> out your real address.
+
+## Overview
+
+- No registration or personal details required.
+- Pick a custom username or get a random address.
+- Messages arrive in real time and can be viewed in the browser.
+- Inboxes are temporary and meant for short-lived use, not long-term storage.
+
+## Pages
+
+- [Home](https://temp-mail.abhi.at/): Create a temporary email address and receive messages.
+- [PikoReels](https://temp-mail.abhi.at/pikoreels): A creator resource for making, planning, and publishing short-form video.
+
+## Notes
+
+- Individual mailbox pages (/mailbox/*) are private, ephemeral, and not indexed.
+- Do not use temporary inboxes for sensitive or important accounts.

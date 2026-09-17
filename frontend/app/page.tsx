@@ -30,9 +30,9 @@ export default function HomePage() {
         <main className="flex-1 bg-white dark:bg-[#0D0E0E] overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center justify-center h-full">
             <div className="temp-emailbox w-full max-w-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8">
-              <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
+              <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
                 Your Temporary Email Address
-              </h2>
+              </h1>
               <form className="w-full" onSubmit={handleSubmit}>
                 <div className="input-box-col flex flex-col sm:flex-row gap-4 items-center">
                   <div className="input-warp flex-1 relative">
@@ -187,9 +187,9 @@ export default function HomePage() {
           <main className="flex-1 bg-white dark:bg-[#0D0E0E] overflow-y-auto">
             <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col items-center justify-center h-full">
               <div className="temp-emailbox w-full max-w-2xl border-2 border-dashed border-gray-300 dark:border-gray-600 rounded-lg p-8">
-                <h2 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
+                <h1 className="font-headline text-2xl sm:text-3xl md:text-4xl font-bold text-center mb-8 text-gray-900 dark:text-white">
                   Your Temporary Email Address
-                </h2>
+                </h1>
                 <form className="w-full" onSubmit={handleSubmit}>
                   <div className="input-box-col flex flex-col sm:flex-row gap-4 items-center">
                     <div className="input-warp flex-1 relative">

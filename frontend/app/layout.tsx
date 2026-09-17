@@ -25,6 +25,9 @@ export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://temp-mail.abhi.at'),
   title: "Temp Mail",
   description: "Temporary email service - Create disposable email addresses and receive emails without registration",
+  alternates: {
+    canonical: "/",
+  },
   openGraph: {
     title: "Temp Mail - Temporary Email Service",
     description: "Create disposable email addresses and receive emails without registration. Your temporary email service for privacy.",
@@ -49,6 +52,24 @@ export const metadata: Metadata = {
   },
 };
 
+const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://temp-mail.abhi.at"
+
+const jsonLd = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  name: "Temp Mail",
+  url: siteUrl,
+  applicationCategory: "UtilitiesApplication",
+  operatingSystem: "Any",
+  description:
+    "Free temporary email service. Create disposable email addresses and receive emails without registration.",
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
+  },
+}
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -58,6 +79,10 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${headlineFont.variable} ${featuresFont.variable} ${inter.variable} antialiased`}>
       <head>
         <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        />
       </head>
       <body className={`font-sans ${inter.variable}`}>
         <ThemeProvider
