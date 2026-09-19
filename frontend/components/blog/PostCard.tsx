@@ -1,5 +1,5 @@
 import Link from "next/link"
-import type { PostListItem } from "@/lib/blog/queries"
+import type { BlogSummary } from "@/lib/blog/outrank"
 
 function formatDate(date: Date | null): string {
   if (!date) return ""
@@ -10,7 +10,7 @@ function formatDate(date: Date | null): string {
   })
 }
 
-export function PostCard({ post }: { post: PostListItem }) {
+export function PostCard({ post }: { post: BlogSummary }) {
   const published = formatDate(post.publishedAt)
   return (
     <Link

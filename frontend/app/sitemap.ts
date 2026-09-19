@@ -1,5 +1,5 @@
 import type { MetadataRoute } from "next"
-import { getAllPublishedForSitemap } from "@/lib/blog/queries"
+import { getAllForSitemap } from "@/lib/blog/outrank"
 
 const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://temp-mail.abhi.at"
 
@@ -7,7 +7,7 @@ const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || "https://temp-mail.abhi.at"
 export const revalidate = 3600
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const articles = await getAllPublishedForSitemap()
+  const articles = await getAllForSitemap()
 
   const articleEntries: MetadataRoute.Sitemap = articles.map((a) => ({
     url: `${siteUrl}/blog/${a.slug}`,

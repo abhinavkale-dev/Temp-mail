@@ -4,7 +4,9 @@ import { notFound } from "next/navigation"
 import { Header, Footer, BorderDecoration } from "@/components/layout"
 import { Screen } from "@/components/screen"
 import { PostCard } from "@/components/blog/PostCard"
-import { getPublishedPage, type PostPage } from "@/lib/blog/queries"
+import { getArticlesPage, type BlogPage } from "@/lib/blog/outrank"
+
+export const revalidate = 3600
 
 const BLOG_DESCRIPTION = "Guides and articles on disposable email, privacy, and avoiding spam."
 
@@ -55,7 +57,7 @@ function Pager({ page, totalPages }: { page: number; totalPages: number }) {
   )
 }
 
-function BlogIndexContent({ page, data }: { page: number; data: PostPage }) {
+function BlogIndexContent({ page, data }: { page: number; data: BlogPage }) {
   return (
     <main className="flex-1 overflow-y-auto bg-white px-4 py-12 text-gray-900 dark:bg-[#0D0E0E] dark:text-white sm:px-6 lg:px-8">
       <div className="mx-auto w-full max-w-3xl">
@@ -91,7 +93,7 @@ export default async function BlogPage({
 }) {
   const sp = await searchParams
   const page = Math.max(1, parseInt(sp.page ?? "1", 10) || 1)
-  const data = await getPublishedPage(page)
+  const data = await getArticlesPage(page)
 
   // Out-of-range page with content is a soft-404, not an indexable empty page.
   if (data.total > 0 && page > data.totalPages) notFound()
