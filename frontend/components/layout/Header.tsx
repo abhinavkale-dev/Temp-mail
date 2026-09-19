@@ -37,6 +37,9 @@ export function Header() {
           <span className="font-custom text-xl font-semibold">TempMail</span>
         </a>
         <div className="flex flex-row items-center gap-2 md:gap-6">
+          <a href="/blog" className="text-sm font-medium text-black transition-colors hover:text-pink-500 dark:text-white">
+            Blog
+          </a>
           <div className="w-8 h-[1.15rem]" />
           <a href="https://github.com/abhinavkale-dev/Temp-mail" target="_blank" rel="noopener noreferrer">
             <Button variant="secondary" size="sm">
@@ -71,6 +74,9 @@ export function Header() {
       </a>
 
       <div className="flex flex-row items-center gap-2 md:gap-6">
+        <a href="/blog" className="text-sm font-medium text-black transition-colors hover:text-pink-500 dark:text-white">
+          Blog
+        </a>
         <button
           type="button"
           role="switch"

@@ -15,6 +15,7 @@
 ## Pages
 
 - [Home](https://temp-mail.abhi.at/): Create a temporary email address and receive messages.
+- [Blog](https://temp-mail.abhi.at/blog): Guides and articles on disposable email, privacy, and avoiding spam.
 - [PikoReels](https://temp-mail.abhi.at/pikoreels): A creator resource for making, planning, and publishing short-form video.
 
 ## Notes
